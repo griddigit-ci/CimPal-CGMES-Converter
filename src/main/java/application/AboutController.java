@@ -150,12 +150,6 @@ public class AboutController implements Initializable {
             e.printStackTrace();
         }
 
-
-
-
-
-
-
     }
 
     //used for the cancel button on the preferences GUI

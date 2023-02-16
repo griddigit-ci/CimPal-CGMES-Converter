@@ -8,6 +8,6 @@ package application;
 
 public class CimPalCGMESConverter {
     public static void main(String[] args) {
-        MainGUI.main(args);
+        MainGUIconverter.main(args);
     }
 }

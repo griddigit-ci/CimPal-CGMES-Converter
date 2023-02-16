@@ -8,7 +8,11 @@ package core;
 
 import application.MainController;
 import customWriter.CustomRDFFormat;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.vocabulary.RDF;
 
@@ -666,20 +670,53 @@ public static Map<String,String> nameMap;
                     }
 
                 }
+                assert newSub != null;
                 //add Equipment.inservice to SSH
                 if (getEqInService.contains(className)) {
+                    //if contains SvStatus add Equipment.inService with the same status
+                    if (modelSV.contains(ResourceFactory.createResource(cim16NS+newSub.getLocalName()),ResourceFactory.createProperty(cim16NS, "SvStatus.inService"))){
+                        Statement oldObj = modelSV.getRequiredProperty(ResourceFactory.createResource(cim16NS+newSub.getLocalName()),ResourceFactory.createProperty(cim16NS, "SvStatus.inService"));
+                        convSSHModel.add(ResourceFactory.createStatement(newSub, RDF.type, ResourceFactory.createProperty(cim17NS, "Equipment")));
+                        convSSHModel.add(ResourceFactory.createStatement(newSub, ResourceFactory.createProperty(cim17NS, "Equipment.inService"), oldObj.getObject()));
+                    }else {
+                        //if it does not contain SvStatus, check ACDCTerminal.connected in SSH. If 1 or 2 Terminal device => connected false means inservice false; if 3 terminals if 2 terminals are true then inservice is true
+                        //if Terminal.connected is true check is there is Switch and check the switch status. But the switch has to be related to the equipment
+                        if (hasCN==1){ // there are ConnectivityNodes in EQ
+                            List<Statement> stmtList = modelEQ.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS,"Terminal.ConductingEquipment"),ResourceFactory.createProperty(cim16NS+newSub.getLocalName()))).toList();
+                            int countTerm = stmtList.size();
+                            if (countTerm==1){
+                                Resource termRes = stmtList.get(0).getSubject();
+                            }else if (countTerm==2){
+
+                            }else if (countTerm>2){
+
+                            }
+                        }else{
+
+                        }
+                    }
+
+
+
                     convSSHModel.add(ResourceFactory.createStatement(newSub, RDF.type, ResourceFactory.createProperty(cim17NS, "Equipment")));
                     convSSHModel.add(ResourceFactory.createStatement(newSub, ResourceFactory.createProperty(cim17NS, "Equipment.inService"), ResourceFactory.createPlainLiteral("true")));
                 }
 
                 //add SvStatus.inservice to SV
                 if (getSvStInService.contains(className)) {
-                    //TODO check is SvStatus.inservice is existing and if yes then take the value
-                    String uuidSvStatus = String.valueOf(UUID.randomUUID());
-                    Resource newSvStatusres = ResourceFactory.createResource(cim17NS + "_" + uuidSvStatus);
-                    convSVModel.add(ResourceFactory.createStatement(newSvStatusres, RDF.type, ResourceFactory.createProperty(cim17NS, "SvStatus")));
-                    convSVModel.add(ResourceFactory.createStatement(newSvStatusres, ResourceFactory.createProperty(cim17NS, "SvStatus.inService"), ResourceFactory.createPlainLiteral("true")));
-                    convSVModel.add(ResourceFactory.createStatement(newSvStatusres, ResourceFactory.createProperty(cim17NS, "SvStatus.ConductingEquipment"), ResourceFactory.createProperty(newSub.toString())));
+                    if (!modelSV.contains(ResourceFactory.createResource(cim16NS+newSub.getLocalName()),ResourceFactory.createProperty(cim16NS, "SvStatus.inService"))){
+                        //Statement oldObj = modelSV.getRequiredProperty(ResourceFactory.createResource(cim16NS+newSub.getLocalName()),ResourceFactory.createProperty(cim16NS, "SvStatus.inService"));
+                        //Resource newSvStatusres = ResourceFactory.createResource(cim17NS + newSub.getLocalName());
+                        //convSVModel.add(ResourceFactory.createStatement(newSvStatusres, RDF.type, ResourceFactory.createProperty(cim17NS, "SvStatus")));
+                        //convSVModel.add(ResourceFactory.createStatement(newSvStatusres, ResourceFactory.createProperty(cim17NS, "SvStatus.inService"), oldObj.getObject()));
+                        //convSVModel.add(ResourceFactory.createStatement(newSvStatusres, ResourceFactory.createProperty(cim17NS, "SvStatus.ConductingEquipment"), ResourceFactory.createProperty(newSub.toString())));
+                   // }else {
+                        String uuidSvStatus = String.valueOf(UUID.randomUUID());
+                        Resource newSvStatusres = ResourceFactory.createResource(cim17NS + "_" + uuidSvStatus);
+                        convSVModel.add(ResourceFactory.createStatement(newSvStatusres, RDF.type, ResourceFactory.createProperty(cim17NS, "SvStatus")));
+                        convSVModel.add(ResourceFactory.createStatement(newSvStatusres, ResourceFactory.createProperty(cim17NS, "SvStatus.inService"), ResourceFactory.createPlainLiteral("true")));
+                        convSVModel.add(ResourceFactory.createStatement(newSvStatusres, ResourceFactory.createProperty(cim17NS, "SvStatus.ConductingEquipment"), ResourceFactory.createProperty(newSub.toString())));
+                    }
                 }
                 //add mrid if not there
                 if (hasMRid == 0 && getMRIDEQ.contains(stmtC.getObject().asResource().getLocalName())) {
@@ -708,6 +745,655 @@ public static Map<String,String> nameMap;
         //save the borders
         saveInstanceModelData(convertedModelMap, saveProperties, loadDataMap.get("profileModelMap"));
 
+    }
+
+    //Split boundary per TSO border
+    public static void SplitBoundaryPerBorder() throws IOException {
+
+
+        Map<String, Map> loadDataMap= new HashMap<>();
+        String xmlBase = "http://iec.ch/TC57/CIM100";
+        //String xmlBase = "";
+
+        //set properties for the export
+
+        Map<String, Object> saveProperties = new HashMap<>();
+
+        saveProperties.put("filename", "test");
+        saveProperties.put("showXmlDeclaration", "true");
+        saveProperties.put("showDoctypeDeclaration", "false");
+        saveProperties.put("tab", "2");
+        saveProperties.put("relativeURIs", "same-document");
+        saveProperties.put("showXmlEncoding", "true");
+        saveProperties.put("xmlBase", xmlBase);
+        saveProperties.put("rdfFormat", CustomRDFFormat.RDFXML_CUSTOM_PLAIN_PRETTY);
+        //saveProperties.put("rdfFormat", CustomRDFFormat.RDFXML_CUSTOM_PLAIN);
+        saveProperties.put("useAboutRules", true); //switch to trigger file chooser and adding the property
+        saveProperties.put("useEnumRules", true); //switch to trigger special treatment when Enum is referenced
+        saveProperties.put("useFileDialog", false);
+        saveProperties.put("fileFolder", "C:");
+        saveProperties.put("dozip", false);
+        saveProperties.put("instanceData", "true"); //this is to only print the ID and not with namespace
+        saveProperties.put("showXmlBaseDeclaration", "false");
+
+        saveProperties.put("putHeaderOnTop", true);
+        saveProperties.put("headerClassResource", "http://iec.ch/TC57/61970-552/ModelDescription/1#FullModel");
+        saveProperties.put("extensionName", "RDF XML");
+        saveProperties.put("fileExtension", "*.xml");
+        saveProperties.put("fileDialogTitle", "Save RDF XML for");
+        //RDFFormat rdfFormat=RDFFormat.RDFXML;
+        //RDFFormat rdfFormat=RDFFormat.RDFXML_PLAIN;
+        //RDFFormat rdfFormat = RDFFormat.RDFXML_ABBREV;
+        //RDFFormat rdfFormat = CustomRDFFormat.RDFXML_CUSTOM_PLAIN_PRETTY;
+        //RDFFormat rdfFormat = CustomRDFFormat.RDFXML_CUSTOM_PLAIN;
+
+
+
+        Map<String,ArrayList<Object>> profileDataMap=new HashMap<>();
+        Map<String,Model> profileDataMapAsModel=new HashMap<>();
+
+        // load all profile models
+        Map<String,Model> profileModelMap = null;
+
+
+        loadDataMap.put("profileDataMap",profileDataMap);
+        loadDataMap.put("profileDataMapAsModel",profileDataMapAsModel);
+        loadDataMap.put("profileModelMap",profileModelMap);
+
+        // load base instance models
+        FileChooser filechooser = new FileChooser();
+        filechooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Boundary equipment", "*.xml"));
+        filechooser.setInitialDirectory(new File(MainController.prefs.get("LastWorkingFolder","")));
+        File file;
+
+        try {
+            file = filechooser.showOpenDialog(null);
+        } catch (Exception k){
+            filechooser.setInitialDirectory(new File("C:\\\\"));
+            file = filechooser.showOpenDialog(null);
+        }
+        List<File> baseInstanceModelFiles = new LinkedList<>();
+        if (file != null) {// the file is selected
+
+            baseInstanceModelFiles.add(file);
+
+            Map<String,Model> baseInstanceModelMap = InstanceDataFactory.modelLoad(baseInstanceModelFiles, xmlBase, null);
+            loadDataMap.put("baseInstanceModelMap",baseInstanceModelMap);
+
+        }
+        Map<String,Model> instanceModelMap= loadDataMap.get("baseInstanceModelMap");
+        Model instanceModelBD = null;
+        //Model instanceModelBD = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+        for (Map.Entry<String, Model> entry : instanceModelMap.entrySet()) {
+            if (!entry.getKey().equals("unionModel") && !entry.getKey().equals("modelUnionWithoutHeader")) {
+                if (entry.getKey().equals("EQBD")) {
+                    instanceModelBD=entry.getValue();
+                }
+            }
+
+        }
+
+        Map<String,Model> newBDModelMap=new HashMap<>();
+
+        assert instanceModelBD != null;
+        for (ResIterator i = instanceModelBD.listSubjectsWithProperty(RDF.type,ResourceFactory.createProperty("http://iec.ch/TC57/CIM100-European#BoundaryPoint")); i.hasNext(); ) {
+            Resource resItem = i.next();
+            String fromTSOname = instanceModelBD.getRequiredProperty(resItem,ResourceFactory.createProperty("http://iec.ch/TC57/CIM100-European#BoundaryPoint.fromEndNameTso")).getObject().toString();
+            String toTSOname = instanceModelBD.getRequiredProperty(resItem,ResourceFactory.createProperty("http://iec.ch/TC57/CIM100-European#BoundaryPoint.toEndNameTso")).getObject().toString();
+
+            if (newBDModelMap.containsKey("Border-"+fromTSOname+"-"+toTSOname+".xml")){
+                Model borderModel = newBDModelMap.get("Border-"+fromTSOname+"-"+toTSOname+".xml");
+                //add the BoundaryPoint
+                borderModel=addBP(instanceModelBD,borderModel,resItem);
+                newBDModelMap.put("Border-"+fromTSOname+"-"+toTSOname+".xml",borderModel);
+
+            }else if (newBDModelMap.containsKey("Border-"+toTSOname+"-"+fromTSOname+".xml")){
+                Model borderModel = newBDModelMap.get("Border-"+toTSOname+"-"+fromTSOname+".xml");
+                //add the BoundaryPoint
+                borderModel=addBP(instanceModelBD,borderModel,resItem);
+                newBDModelMap.put("Border-"+toTSOname+"-"+fromTSOname+".xml",borderModel);
+
+            }else{
+                Model newBoderModel = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+                newBoderModel.setNsPrefixes(instanceModelBD.getNsPrefixMap());
+                //add the header statements
+                Resource headerRes=ResourceFactory.createResource("urn:uuid:"+UUID.randomUUID());
+                newBoderModel.add(ResourceFactory.createStatement(headerRes,RDF.type,ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#FullModel")));
+                for (StmtIterator n = instanceModelBD.listStatements(new SimpleSelector(instanceModelBD.listSubjectsWithProperty(RDF.type,ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#FullModel")).nextResource(), null,(RDFNode) null)); n.hasNext();) {
+                    Statement stmt = n.next();
+                    newBoderModel.add(ResourceFactory.createStatement(headerRes,stmt.getPredicate(),stmt.getObject()));
+                }
+                //add the BoundaryPoint
+                newBoderModel=addBP(instanceModelBD,newBoderModel,resItem);
+                //add the model to the map
+                newBDModelMap.put("Border-"+fromTSOname+"-"+toTSOname+".xml",newBoderModel);
+            }
+        }
+
+
+        //save the borders
+        saveInstanceModelData(newBDModelMap, saveProperties, profileModelMap);
+
+    }
+
+    //Split Boundary and Reference data (CGMES v3.0)
+    public static void SplitBoundaryAndRefData() throws IOException {
+
+
+        Map<String, Map> loadDataMap= new HashMap<>();
+        String xmlBase = "http://iec.ch/TC57/CIM100";
+        //String xmlBase = "";
+
+        //set properties for the export
+
+        Map<String, Object> saveProperties = new HashMap<>();
+
+        saveProperties.put("filename", "test");
+        saveProperties.put("showXmlDeclaration", "true");
+        saveProperties.put("showDoctypeDeclaration", "false");
+        saveProperties.put("tab", "2");
+        saveProperties.put("relativeURIs", "same-document");
+        saveProperties.put("showXmlEncoding", "true");
+        saveProperties.put("xmlBase", xmlBase);
+        saveProperties.put("rdfFormat", CustomRDFFormat.RDFXML_CUSTOM_PLAIN_PRETTY);
+        //saveProperties.put("rdfFormat", CustomRDFFormat.RDFXML_CUSTOM_PLAIN);
+        saveProperties.put("useAboutRules", true); //switch to trigger file chooser and adding the property
+        saveProperties.put("useEnumRules", true); //switch to trigger special treatment when Enum is referenced
+        saveProperties.put("useFileDialog", false);
+        saveProperties.put("fileFolder", "C:");
+        saveProperties.put("dozip", false);
+        saveProperties.put("instanceData", "true"); //this is to only print the ID and not with namespace
+        saveProperties.put("showXmlBaseDeclaration", "false");
+
+        saveProperties.put("putHeaderOnTop", true);
+        saveProperties.put("headerClassResource", "http://iec.ch/TC57/61970-552/ModelDescription/1#FullModel");
+        saveProperties.put("extensionName", "RDF XML");
+        saveProperties.put("fileExtension", "*.xml");
+        saveProperties.put("fileDialogTitle", "Save RDF XML for");
+        //RDFFormat rdfFormat=RDFFormat.RDFXML;
+        //RDFFormat rdfFormat=RDFFormat.RDFXML_PLAIN;
+        //RDFFormat rdfFormat = RDFFormat.RDFXML_ABBREV;
+        //RDFFormat rdfFormat = CustomRDFFormat.RDFXML_CUSTOM_PLAIN_PRETTY;
+        //RDFFormat rdfFormat = CustomRDFFormat.RDFXML_CUSTOM_PLAIN;
+
+
+
+        Map<String,ArrayList<Object>> profileDataMap=new HashMap<>();
+        Map<String,Model> profileDataMapAsModel=new HashMap<>();
+
+        // load all profile models
+        Map<String,Model> profileModelMap = null;
+
+
+        loadDataMap.put("profileDataMap",profileDataMap);
+        loadDataMap.put("profileDataMapAsModel",profileDataMapAsModel);
+        loadDataMap.put("profileModelMap",profileModelMap);
+
+        // load base instance models
+        FileChooser filechooser = new FileChooser();
+        filechooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Boundary equipment", "*.xml"));
+        filechooser.setInitialDirectory(new File(MainController.prefs.get("LastWorkingFolder","")));
+        File file;
+
+        try {
+            file = filechooser.showOpenDialog(null);
+        } catch (Exception k){
+            filechooser.setInitialDirectory(new File("C:\\\\"));
+            file = filechooser.showOpenDialog(null);
+        }
+        List<File> baseInstanceModelFiles = new LinkedList<>();
+        if (file != null) {// the file is selected
+
+            baseInstanceModelFiles.add(file);
+
+            Map<String,Model> baseInstanceModelMap = InstanceDataFactory.modelLoad(baseInstanceModelFiles, xmlBase, null);
+            loadDataMap.put("baseInstanceModelMap",baseInstanceModelMap);
+
+        }
+        Map<String,Model> instanceModelMap= loadDataMap.get("baseInstanceModelMap");
+        Model instanceModelBD = null;
+        //Model instanceModelBD = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+        for (Map.Entry<String, Model> entry : instanceModelMap.entrySet()) {
+            if (!entry.getKey().equals("unionModel") && !entry.getKey().equals("modelUnionWithoutHeader")) {
+                if (entry.getKey().equals("EQBD")) {
+                    instanceModelBD=entry.getValue();
+                }
+            }
+
+        }
+
+        List<String> keepInBD= new LinkedList<>();
+        keepInBD.add("ConnectivityNode");
+        keepInBD.add("BoundaryPoint");
+        keepInBD.add("Line");
+        keepInBD.add("Substation");
+        keepInBD.add("VoltageLevel");
+        keepInBD.add("Bay");
+        keepInBD.add("Terminal");
+        keepInBD.add("Junction");
+        keepInBD.add("FullModel");
+
+        Map<String,Model> newBDModelMap=new HashMap<>();
+
+        //create the new model for BP
+        Model newBoderModel = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+        newBoderModel.setNsPrefix("cim","http://iec.ch/TC57/CIM100#");
+        newBoderModel.setNsPrefix("eu","http://iec.ch/TC57/CIM100-European#");
+        newBoderModel.setNsPrefix("md","http://iec.ch/TC57/61970-552/ModelDescription/1#");
+        newBoderModel.setNsPrefix("rdf","http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+
+        //create the new model for ref data
+        Model newRefModel = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+        newRefModel.setNsPrefix("cim","http://iec.ch/TC57/CIM100#");
+        newRefModel.setNsPrefix("eu","http://iec.ch/TC57/CIM100-European#");
+        newRefModel.setNsPrefix("md","http://iec.ch/TC57/61970-552/ModelDescription/1#");
+        newRefModel.setNsPrefix("rdf","http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+
+        assert instanceModelBD != null;
+        Map<String, String> oldPrefix = instanceModelBD.getNsPrefixMap();
+        int keepExtensions = 1; // keep extensions
+        if (oldPrefix.containsKey("cgmbp")){
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setContentText("The Boundary Set includes non CIM (cgmbp) extensions. Do you want to keep them in the split Boundary Set?");
+            alert.setHeaderText(null);
+            alert.setTitle("Question - cgmbp extensions are present");
+            ButtonType btnYes = new ButtonType("Yes");
+            ButtonType btnNo = new ButtonType("No", ButtonBar.ButtonData.CANCEL_CLOSE);
+            alert.getButtonTypes().setAll(btnYes, btnNo);
+            Optional<ButtonType> result = alert.showAndWait();
+
+            if (result.get() == btnNo) {
+                keepExtensions=0;
+            }else{
+                if (oldPrefix.containsKey("cgmbp")){
+                    newBoderModel.setNsPrefix("cgmbp","http://entsoe.eu/CIM/Extensions/CGM-BP/2020#");
+                    newRefModel.setNsPrefix("cgmbp","http://entsoe.eu/CIM/Extensions/CGM-BP/2020#");
+                }
+            }
+        }
+
+
+        for (StmtIterator i = instanceModelBD.listStatements(null,RDF.type,(RDFNode) null); i.hasNext(); ) {
+            Statement stmt = i.next();
+            if (keepExtensions==1) {
+                if (keepInBD.contains(stmt.getObject().asResource().getLocalName())) {
+                    for (StmtIterator k = instanceModelBD.listStatements(stmt.getSubject(), null, (RDFNode) null); k.hasNext(); ) {
+                        Statement stmtKeep = k.next();
+                        newBoderModel.add(stmtKeep);
+                        if (stmt.getObject().asResource().getLocalName().equals("FullModel")){
+                            newRefModel.add(stmtKeep);
+                        }
+                    }
+                } else {
+                    for (StmtIterator r = instanceModelBD.listStatements(stmt.getSubject(), null, (RDFNode) null); r.hasNext(); ) {
+                        Statement stmtRef = r.next();
+                        newRefModel.add(stmtRef);
+                    }
+                }
+            }else{
+                if (!stmt.getObject().asResource().getNameSpace().equals("http://entsoe.eu/CIM/Extensions/CGM-BP/2020#")){
+                    if (keepInBD.contains(stmt.getObject().asResource().getLocalName())) {
+                        for (StmtIterator k = instanceModelBD.listStatements(stmt.getSubject(), null, (RDFNode) null); k.hasNext(); ) {
+                            Statement stmtKeep = k.next();
+                            if (!stmtKeep.getPredicate().getNameSpace().equals("http://entsoe.eu/CIM/Extensions/CGM-BP/2020#")) {
+                                newBoderModel.add(stmtKeep);
+                                if (stmt.getObject().asResource().getLocalName().equals("FullModel")){
+                                    newRefModel.add(stmtKeep);
+                                }
+                            }
+                        }
+                    } else {
+                        for (StmtIterator r = instanceModelBD.listStatements(stmt.getSubject(), null, (RDFNode) null); r.hasNext(); ) {
+                            Statement stmtRef = r.next();
+                            if (!stmtRef.getPredicate().getNameSpace().equals("http://entsoe.eu/CIM/Extensions/CGM-BP/2020#")) {
+                                newRefModel.add(stmtRef);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        newBDModelMap.put("BoundaryData.xml",newBoderModel);
+        newBDModelMap.put("ReferenceData.xml",newRefModel);
+        //save the borders
+        saveInstanceModelData(newBDModelMap, saveProperties, profileModelMap);
+
+    }
+
+    // Convert CGMES v2.4 Boundary Set to CGMES v3.0
+    public static void ConvertBoundarySetCGMESv2v3() throws IOException {
+
+
+        Map<String, Map> loadDataMap= new HashMap<>();
+        String xmlBase = "http://iec.ch/TC57/CIM100";
+        //String xmlBase = "";
+
+        //set properties for the export
+
+        Map<String, Object> saveProperties = new HashMap<>();
+
+        saveProperties.put("filename", "test");
+        saveProperties.put("showXmlDeclaration", "true");
+        saveProperties.put("showDoctypeDeclaration", "false");
+        saveProperties.put("tab", "2");
+        saveProperties.put("relativeURIs", "same-document");
+        saveProperties.put("showXmlEncoding", "true");
+        saveProperties.put("xmlBase", xmlBase);
+        saveProperties.put("rdfFormat", CustomRDFFormat.RDFXML_CUSTOM_PLAIN_PRETTY);
+        //saveProperties.put("rdfFormat", CustomRDFFormat.RDFXML_CUSTOM_PLAIN);
+        saveProperties.put("useAboutRules", true); //switch to trigger file chooser and adding the property
+        saveProperties.put("useEnumRules", true); //switch to trigger special treatment when Enum is referenced
+        saveProperties.put("useFileDialog", false);
+        saveProperties.put("fileFolder", "C:");
+        saveProperties.put("dozip", false);
+        saveProperties.put("instanceData", "true"); //this is to only print the ID and not with namespace
+        saveProperties.put("showXmlBaseDeclaration", "false");
+
+        saveProperties.put("putHeaderOnTop", true);
+        saveProperties.put("headerClassResource", "http://iec.ch/TC57/61970-552/ModelDescription/1#FullModel");
+        saveProperties.put("extensionName", "RDF XML");
+        saveProperties.put("fileExtension", "*.xml");
+        saveProperties.put("fileDialogTitle", "Save RDF XML for");
+        //RDFFormat rdfFormat=RDFFormat.RDFXML;
+        //RDFFormat rdfFormat=RDFFormat.RDFXML_PLAIN;
+        //RDFFormat rdfFormat = RDFFormat.RDFXML_ABBREV;
+        //RDFFormat rdfFormat = CustomRDFFormat.RDFXML_CUSTOM_PLAIN_PRETTY;
+        //RDFFormat rdfFormat = CustomRDFFormat.RDFXML_CUSTOM_PLAIN;
+
+
+
+        Map<String,ArrayList<Object>> profileDataMap=new HashMap<>();
+        Map<String,Model> profileDataMapAsModel=new HashMap<>();
+        //Map<String,Model> conversionInstruction=new HashMap<>();
+
+        // load all profile models
+        Map<String,Model> profileModelMap = null;
+
+
+        loadDataMap.put("profileDataMap",profileDataMap);
+        loadDataMap.put("profileDataMapAsModel",profileDataMapAsModel);
+        loadDataMap.put("profileModelMap",profileModelMap);
+        loadDataMap.put("conversionInstruction",profileModelMap);
+
+
+
+        //xmlBase = "http://iec.ch/TC57/2013/CIM-schema-cim16";
+        // load base instance models
+        FileChooser filechooser = new FileChooser();
+        filechooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Boundary equipment", "*.xml"));
+        filechooser.setInitialDirectory(new File(MainController.prefs.get("LastWorkingFolder","")));
+        File file;
+
+        try {
+            file = filechooser.showOpenDialog(null);
+        } catch (Exception k){
+            filechooser.setInitialDirectory(new File("C:\\\\"));
+            file = filechooser.showOpenDialog(null);
+        }
+        List<File> baseInstanceModelFiles = new LinkedList<>();
+        if (file != null) {// the file is selected
+
+            baseInstanceModelFiles.add(file);
+
+            Map<String,Model> baseInstanceModelMap = InstanceDataFactory.modelLoad(baseInstanceModelFiles, xmlBase, null);
+            loadDataMap.put("baseInstanceModelMap",baseInstanceModelMap);
+
+        }
+        Map<String,Model> instanceModelMap= loadDataMap.get("baseInstanceModelMap");
+        Model instanceModelBD = null;
+        //Model instanceModelBD = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+        for (Map.Entry<String, Model> entry : instanceModelMap.entrySet()) {
+            if (!entry.getKey().equals("unionModel") && !entry.getKey().equals("modelUnionWithoutHeader")) {
+                if (entry.getKey().equals("EQBD")) {
+                    instanceModelBD=entry.getValue();
+                }
+            }
+
+        }
+
+        Map<String,Model> newBDModelMap=new HashMap<>();
+
+        //create the new model
+        Model newBoderModel = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+        newBoderModel.setNsPrefix("cim","http://iec.ch/TC57/CIM100#");
+        newBoderModel.setNsPrefix("eu","http://iec.ch/TC57/CIM100-European#");
+        newBoderModel.setNsPrefix("md","http://iec.ch/TC57/61970-552/ModelDescription/1#");
+        newBoderModel.setNsPrefix("rdf","http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+
+        //check for extensions
+
+        assert instanceModelBD != null;
+        Map<String, String> oldPrefix = instanceModelBD.getNsPrefixMap();
+        int keepExtensions = 1; // keep extensions
+        if (oldPrefix.containsKey("cgmbp")){
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setContentText("The Boundary Set includes non CIM (cgmbp) extensions. Do you want to keep them in the converted Boundary Set?");
+            alert.setHeaderText(null);
+            alert.setTitle("Question - cgmbp extensions are present");
+            ButtonType btnYes = new ButtonType("Yes");
+            ButtonType btnNo = new ButtonType("No", ButtonBar.ButtonData.CANCEL_CLOSE);
+            alert.getButtonTypes().setAll(btnYes, btnNo);
+            Optional<ButtonType> result = alert.showAndWait();
+
+            if (result.get() == btnNo) {
+                keepExtensions=0;
+            }else{
+                if (oldPrefix.containsKey("cgmbp")){
+                    newBoderModel.setNsPrefix("cgmbp","http://entsoe.eu/CIM/Extensions/CGM-BP/2020#");
+                }
+            }
+        }
+
+        //conversion process
+        String cim17NS="http://iec.ch/TC57/CIM100#";
+        String cim16NS="http://iec.ch/TC57/2013/CIM-schema-cim16#";
+        String euNS="http://iec.ch/TC57/CIM100-European#";
+        List<String> skipList= new LinkedList<>();
+        skipList.add("ConnectivityNode.boundaryPoint");
+        List<String> getMRID= new LinkedList<>();
+        getMRID.add("ConnectivityNode");
+        getMRID.add("Line");
+        getMRID.add("EnergySchedulingType");
+        getMRID.add("GeographicalRegion");
+        getMRID.add("SubGeographicalRegion");
+        getMRID.add("Terminal");
+        getMRID.add("Substation");
+        getMRID.add("BaseVoltage");
+        getMRID.add("VoltageLevel");
+        getMRID.add("Bay");
+        getMRID.add("Junction");
+
+        Property mrid=ResourceFactory.createProperty("http://iec.ch/TC57/CIM100#IdentifiedObject.mRID");
+
+
+        for (StmtIterator i = instanceModelBD.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); i.hasNext(); ) { // loop on all classes
+            Statement stmt = i.next();
+
+            //add the header statements
+            if (stmt.getObject().asResource().getLocalName().equals("FullModel")) {
+                for (StmtIterator n = instanceModelBD.listStatements(new SimpleSelector(stmt.getSubject(), null,(RDFNode) null)); n.hasNext();) {
+                    Statement stmtH = n.next();
+                    if (stmtH.getPredicate().getLocalName().equals("Model.profile")){
+                        newBoderModel.add(ResourceFactory.createStatement(stmtH.getSubject(),stmtH.getPredicate(), ResourceFactory.createPlainLiteral("http://iec.ch/TC57/ns/CIM/EquipmentBoundary-EU/3.0")));
+                    }else {
+                        newBoderModel.add(stmtH);
+                    }
+                }
+            }else {
+                Resource newSub;
+                Property newPre;
+                RDFNode newObj;
+                Resource newBPres=null;
+
+                if (stmt.getObject().asResource().getLocalName().equals("ConnectivityNode")) {
+                    //Create BoundaryPoint
+                    String uuidBP = String.valueOf(UUID.randomUUID());
+                    newBPres = ResourceFactory.createResource(euNS + "_" + uuidBP);
+                    RDFNode euBP = ResourceFactory.createProperty(euNS, "BoundaryPoint");
+                    newBoderModel.add(ResourceFactory.createStatement(newBPres, RDF.type, euBP));
+                    newBoderModel.add(ResourceFactory.createStatement(newBPres, mrid, ResourceFactory.createPlainLiteral(uuidBP)));
+                    newBoderModel.add(ResourceFactory.createStatement(newBPres, ResourceFactory.createProperty(euNS,"BoundaryPoint.ConnectivityNode"), ResourceFactory.createProperty(stmt.getSubject().toString())));
+                }
+
+                int addmrid=1;
+
+                for (StmtIterator a = instanceModelBD.listStatements(new SimpleSelector(stmt.getSubject(), null, (RDFNode) null)); a.hasNext(); ) { // loop on all attributes
+                    Statement stmtA = a.next();
+                    if (!skipList.contains(stmtA.getPredicate().getLocalName())) {
+                        if (stmtA.getSubject().getNameSpace().equals("http://iec.ch/TC57/2013/CIM-schema-cim16#")) {
+                            newSub = rebaseResource(stmtA.getSubject(), cim17NS);
+                        } else if (stmtA.getSubject().getNameSpace().equals("http://entsoe.eu/CIM/SchemaExtension/3/1#")) {
+                            newSub = rebaseResource(stmtA.getSubject(), euNS);
+                        } else {
+                            newSub = stmtA.getSubject();
+                        }
+                        if (stmtA.getPredicate().getNameSpace().equals("http://iec.ch/TC57/2013/CIM-schema-cim16#")) {
+                            newPre = rebaseProperty(stmtA.getPredicate(), cim17NS);
+                        } else if (stmtA.getPredicate().getNameSpace().equals("http://entsoe.eu/CIM/SchemaExtension/3/1#")) {
+                            newPre = rebaseProperty(stmtA.getPredicate(), euNS);
+                        } else {
+                            newPre = stmtA.getPredicate();
+                        }
+                        if (stmtA.getObject().isResource()) {
+                            if (stmtA.getObject().asResource().getNameSpace().equals("http://iec.ch/TC57/2013/CIM-schema-cim16#")) {
+                                newObj = rebaseRDFNode(stmtA.getObject(), cim17NS);
+                            } else if (stmtA.getObject().asResource().getNameSpace().equals("http://entsoe.eu/CIM/SchemaExtension/3/1#")) {
+                                newObj = rebaseRDFNode(stmtA.getObject(), euNS);
+                            } else {
+                                newObj = stmtA.getObject();
+                            }
+                        } else {
+                            newObj = stmtA.getObject();
+                        }
+                        if (stmt.getObject().asResource().getLocalName().equals("ConnectivityNode")) {
+                            String stmtAPredicate=stmtA.getPredicate().getLocalName();
+                            switch (stmtAPredicate) {
+                                case "ConnectivityNode.toEndName":
+                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.toEndName");
+                                    newSub=newBPres;
+                                    break;
+                                case "ConnectivityNode.fromEndName":
+                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.fromEndName");
+                                    newSub=newBPres;
+                                    break;
+                                case "ConnectivityNode.toEndNameTso":
+                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.toEndNameTso");
+                                    newSub=newBPres;
+                                    break;
+                                case "ConnectivityNode.toEndIsoCode":
+                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.toEndIsoCode");
+                                    newSub=newBPres;
+                                    break;
+                                case "ConnectivityNode.fromEndIsoCode":
+                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.fromEndIsoCode");
+                                    newSub=newBPres;
+                                    break;
+                                case "ConnectivityNode.fromEndNameTso":
+                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.fromEndNameTso");
+                                    newSub=newBPres;
+                                    break;
+                                case "IdentifiedObject.name":
+                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "IdentifiedObject.name");
+                                    newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                                    newSub=newBPres;
+                                    break;
+                                case "IdentifiedObject.description":
+                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "IdentifiedObject.description");
+                                    newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                                    newSub=newBPres;
+                                    Resource lineSub = instanceModelBD.getRequiredProperty(stmtA.getSubject(),ResourceFactory.createProperty(cim16NS,"ConnectivityNode.ConnectivityNodeContainer")).getObject().asResource();
+                                    String lineDesc = instanceModelBD.getRequiredProperty(lineSub,ResourceFactory.createProperty(cim16NS,"IdentifiedObject.description")).getObject().toString();
+                                    if (lineDesc.contains("HVDC")){
+                                        newBoderModel.add(ResourceFactory.createStatement(newSub, ResourceFactory.createProperty(euNS,"BoundaryPoint.isDirectCurrent"), ResourceFactory.createPlainLiteral("true")));
+                                    }
+                                    break;
+                                case "IdentifiedObject.shortName":
+                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "IdentifiedObject.shortName");
+                                    newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                                    newSub=newBPres;
+                                    break;
+                                case "IdentifiedObject.energyIdentCodeEic":
+                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "IdentifiedObject.energyIdentCodeEic");
+                                    newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                                    newSub=newBPres;
+                                    break;
+                            }
+                        }
+
+
+                        newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                    }
+                    if (getMRID.contains(stmt.getObject().asResource().getLocalName()) && addmrid==1){
+                        newBoderModel.add(ResourceFactory.createStatement(stmt.getSubject(), mrid, ResourceFactory.createPlainLiteral(stmt.getSubject().getLocalName().substring(1))));
+                        addmrid=0;
+                    }
+                }
+
+            }
+
+        }
+
+        //filter extensions
+        List<Statement> StmtDeleteList = new LinkedList<>();
+        int deleteClass;
+        if (keepExtensions==0){
+            for (StmtIterator i = newBoderModel.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); i.hasNext(); ) { // loop on all classes
+                Statement stmt = i.next();
+                deleteClass=0;
+                if (stmt.getObject().asResource().getNameSpace().equals("http://entsoe.eu/CIM/Extensions/CGM-BP/2020#")){
+                    StmtDeleteList.add(stmt);
+                    deleteClass=1;
+                }
+                for (StmtIterator a = newBoderModel.listStatements(new SimpleSelector(stmt.getSubject(), null, (RDFNode) null)); a.hasNext(); ) { // loop on all attributes
+                    Statement stmtA = a.next();
+                    if (deleteClass==1) {
+                        StmtDeleteList.add(stmtA);
+                    }else{
+                        if (stmtA.getPredicate().getNameSpace().equals("http://entsoe.eu/CIM/Extensions/CGM-BP/2020#")) {
+                            StmtDeleteList.add(stmtA);
+                        }
+                    }
+                }
+            }
+            newBoderModel.remove(StmtDeleteList);
+        }
+
+
+
+        //add the model to the map
+        newBDModelMap.put("ConvertedBoundaryCGMESv3"+".xml",newBoderModel);
+
+
+
+        //save the borders
+        saveInstanceModelData(newBDModelMap, saveProperties, profileModelMap);
+
+    }
+
+
+    //add BP
+    private static Model addBP(Model modelSource, Model newModel, Resource resItem) {
+        for (StmtIterator bp = modelSource.listStatements(new SimpleSelector(resItem, null,(RDFNode) null)); bp.hasNext();) {
+            Statement stmt = bp.next();
+            newModel.add(stmt);
+            // Add ConnectivityNode
+            if (stmt.getPredicate().asResource().getLocalName().equals("BoundaryPoint.ConnectivityNode")) {
+                for (StmtIterator cn = modelSource.listStatements(new SimpleSelector(stmt.getObject().asResource(), null,(RDFNode) null)); cn.hasNext();) {
+                    Statement stmtcn = cn.next();
+                    newModel.add(stmtcn);
+                    //Add Line container
+                    if (stmtcn.getPredicate().asResource().getLocalName().equals("ConnectivityNode.ConnectivityNodeContainer")) {
+                        for (StmtIterator con = modelSource.listStatements(new SimpleSelector(stmtcn.getObject().asResource(), null,(RDFNode) null)); con.hasNext();) {
+                            Statement stmtcon = con.next();
+                            newModel.add(stmtcon);
+                        }
+                    }
+                }
+            }
+        }
+        return newModel;
     }
 
 
@@ -832,10 +1518,14 @@ public static Map<String,String> nameMap;
                 saveProperties.put("rdfEnumList", rdfEnumList);
             }
 
-            if (nameMap.size()!=0){
-                saveProperties.replace("filename", nameMap.get(entry.getKey()));
-            }else{
+            if (MainController.ibBDconversion) {
                 saveProperties.replace("filename", entry.getKey());
+            }else{
+                if (nameMap.size() != 0) {
+                    saveProperties.replace("filename", nameMap.get(entry.getKey()));
+                } else {
+                    saveProperties.replace("filename", entry.getKey());
+                }
             }
 
 

@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>eu.griddigit</groupId>
   <artifactId>CimPalCGMESConverter</artifactId>
-  <version>2023</version>
+  <version>2023.1</version>
   <build>
     <finalName>CimPalCGMESConverter</finalName>
     <plugins>
@@ -69,6 +69,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jena.version>4.7.0</jena.version>
     <log4j.version>2.12.1</log4j.version>
+    <javafx.version>19.0.2.1</javafx.version>
     <jdk.version>11</jdk.version>
   </properties>
 </project>

@@ -6,6 +6,7 @@
 package application;
 
 import core.InstanceDataFactory;
+import core.ModelManipulationFactory;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -33,12 +34,12 @@ import static core.ModelManipulationFactory.ConvertCGMESv2v3;
 public class MainController implements Initializable {
 
 
+    public TabPane tabPaneConstraintsDetails;
+    public Button btnResetIGM;
+    public Tab tabOutputWindow;
     @FXML
     private TextField fPathIGM;
-    @FXML
-    private TextField fPathOutput;
-    @FXML
-    private Button btnResetIGM;
+
     @FXML
     private Button btnConvert;
     @FXML
@@ -56,11 +57,31 @@ public class MainController implements Initializable {
 
     @FXML
     private TabPane tabPaneDown;
+    @FXML
+    private CheckBox fCBconvIGM;
+
+    @FXML
+    private CheckBox fCBconvBD;
+
+    @FXML
+    private  CheckBox fCBconv24To3;
+
+    @FXML
+    private  CheckBox fCBconvSplitBDREF;
+
+    @FXML
+    private CheckBox fCBconvBDSplitPerBorder;
+
+    @FXML
+    private Button fBrowse;
+
+
 
     private static Map<String, Map> loadDataMap;
 
 
     public static TextArea foutputWindowVar;
+    public static boolean ibBDconversion;
 
     public MainController() {
 
@@ -140,8 +161,7 @@ public class MainController implements Initializable {
         try {
             Stage guiPrefStage = new Stage();
             //Scene for the menu Preferences
-            FXMLLoader fxmlLoader=new FXMLLoader();
-            Parent rootPreferences = fxmlLoader.load(getClass().getResource("/fxml/preferencesGui.fxml"));
+            Parent rootPreferences = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/fxml/preferencesGui.fxml")));
             Scene preferences = new Scene(rootPreferences);
             guiPrefStage.setScene(preferences);
             guiPrefStage.setTitle("Preferences");
@@ -185,26 +205,87 @@ public class MainController implements Initializable {
     }
 
     @FXML
-    //action button Browse Output
-    private void actionBrowseOutput() {
-        progressBar.setProgress(0);
+    //action check box Conversion of Individual Grid Model (IGM)
+    private void actionCBconvIGM() {
 
-        //select file 1
-        FileChooser filechooser = new FileChooser();
-        filechooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Instance files", "*.xml","*.zip"));
-        filechooser.setInitialDirectory(new File(MainController.prefs.get("LastWorkingFolder","")));
-        List<File> fileL;
-        fileL = filechooser.showOpenMultipleDialog(null);
+        if (fCBconvIGM.isSelected()){
+            fBrowse.setDisable(false);
+            fcbKeepExt.setDisable(false);
+            fcbKeepExt.setSelected(false);
+            fCBconvBD.setDisable(true);
 
-        if (fileL != null) {// the file is selected
-
-            MainController.prefs.put("LastWorkingFolder", fileL.get(0).getParent());
-            fPathOutput.setText(fileL.toString());
-            MainController.IDModel=fileL;
-        } else{
-            fPathOutput.clear();
+        }else{
+            fBrowse.setDisable(true);
+            fcbKeepExt.setDisable(true);
+            fCBconvBD.setDisable(false);
+            fcbKeepExt.setSelected(false);
         }
+
     }
+
+    @FXML
+    //action check box Conversion of Boundary dataset
+    private void actionCBconvBD() {
+
+        if (fCBconvBD.isSelected()){
+            fCBconvIGM.setDisable(true);
+            fCBconv24To3.setDisable(false);
+            fCBconvSplitBDREF.setDisable(false);
+            fCBconvBDSplitPerBorder.setDisable(false);
+        }else{
+            fCBconvIGM.setDisable(false);
+            fCBconv24To3.setDisable(true);
+            fCBconvSplitBDREF.setDisable(true);
+            fCBconvBDSplitPerBorder.setDisable(true);
+            fCBconv24To3.setSelected(false);
+            fCBconvSplitBDREF.setSelected(false);
+            fCBconvBDSplitPerBorder.setSelected(false);
+        }
+
+    }
+
+    @FXML
+    //action check box Conversion of Boundary dataset check box 1
+    private void actionCBconvBD1() {
+
+        if (fCBconv24To3.isSelected()){
+            fCBconvSplitBDREF.setDisable(true);
+            fCBconvBDSplitPerBorder.setDisable(true);
+        }else{
+            fCBconvSplitBDREF.setDisable(false);
+            fCBconvBDSplitPerBorder.setDisable(false);
+        }
+
+    }
+
+    @FXML
+    //action check box Conversion of Boundary dataset check box 2
+    private void actionCBconvBD2() {
+
+        if (fCBconvSplitBDREF.isSelected()){
+            fCBconv24To3.setDisable(true);
+            fCBconvBDSplitPerBorder.setDisable(true);
+        }else{
+            fCBconv24To3.setDisable(false);
+            fCBconvBDSplitPerBorder.setDisable(false);
+        }
+
+    }
+
+    @FXML
+    //action check box Conversion of Boundary dataset check box 3
+    private void actionCBconvBD3() {
+
+        if (fCBconvBDSplitPerBorder.isSelected()){
+            fCBconv24To3.setDisable(true);
+            fCBconvSplitBDREF.setDisable(true);
+        }else{
+            fCBconv24To3.setDisable(false);
+            fCBconvSplitBDREF.setDisable(false);
+        }
+
+    }
+
 
     @FXML
     // action on menu About
@@ -212,8 +293,7 @@ public class MainController implements Initializable {
         try {
             Stage guiAboutStage = new Stage();
             //Scene for the menu Preferences
-            FXMLLoader fxmlLoader=new FXMLLoader();
-            Parent rootAbout = fxmlLoader.load(getClass().getResource("/fxml/aboutGui.fxml"));
+            Parent rootAbout = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/fxml/aboutGui.fxml")));
             Scene about = new Scene(rootAbout);
             guiAboutStage.setScene(about);
             guiAboutStage.setTitle("About");
@@ -230,7 +310,13 @@ public class MainController implements Initializable {
     //Action for button "Reset"
     private void actionBtnReset() {
         fPathIGM.clear();
-        btnConvert.setDisable(true);
+        fCBconvIGM.setSelected(false);
+        fCBconvBD.setSelected(false);
+        fcbKeepExt.setSelected(false);
+        fCBconv24To3.setSelected(false);
+        fCBconvSplitBDREF.setSelected(false);
+        fCBconvBDSplitPerBorder.setSelected(false);
+        //btnConvert.setDisable(true);
         progressBar.setProgress(0);
 
     }
@@ -247,11 +333,29 @@ public class MainController implements Initializable {
     //action button Convert
     private void actionBtnConvert() throws IOException {
         progressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
-        if (fcbKeepExt.isSelected()){
-            ConvertCGMESv2v3(loadDataMap,1);
-        }else{
-            ConvertCGMESv2v3(loadDataMap,0);
+
+        if (fCBconvIGM.isSelected()){
+            ibBDconversion=false;
+            if (fcbKeepExt.isSelected()){
+                ConvertCGMESv2v3(loadDataMap,1);
+            }else{
+                ConvertCGMESv2v3(loadDataMap,0);
+            }
         }
+
+        if (fCBconvBD.isSelected()){
+            ibBDconversion=true;
+            if (fCBconv24To3.isSelected()){
+                ModelManipulationFactory.ConvertBoundarySetCGMESv2v3();
+            }else if (fCBconvSplitBDREF.isSelected()){
+                ModelManipulationFactory.SplitBoundaryAndRefData();
+            }else if (fCBconvBDSplitPerBorder.isSelected()){
+                ModelManipulationFactory.SplitBoundaryPerBorder();
+
+            }
+        }
+
+        System.out.print("Conversion finished.\n");
         progressBar.setProgress(1);
     }
 

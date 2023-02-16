@@ -39,7 +39,7 @@ public class PreloadApp extends Preloader {
 
         // If preloader has complex UI it's initialization can be done in MyPreloader#init
         Platform.runLater(() -> {
-            Label title = new Label("CimPal application\nLoading, please wait...");
+            Label title = new Label("CimPal CGMES Converter application\nLoading, please wait...");
             title.setTextAlignment(TextAlignment.CENTER);
             progress = new Label("0%");
 

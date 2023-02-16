@@ -14,21 +14,47 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
-public class MainGUI extends Application {
+import java.util.Objects;
+
+public class MainGUIconverter extends Application {
 
     private Stage MainAppStage;
     private static Scene mainApp;
+
+    public MainGUIconverter() {
+
+    }
 
     @Override
     public void init() throws Exception {
         super.init();
         // Scene for the Main App
         // Load root layout from fxml file.
-        Parent rootMainApp = FXMLLoader.load(getClass().getResource("/fxml/CimPalGui.fxml"));
+        Parent rootMainApp = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/fxml/CimPalCGMESconverterGui - Copy.fxml")));
+        //Parent rootMainApp = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/fxml/aboutGui.fxml")));
         mainApp = new Scene(rootMainApp);
 
     }
 
+
+ /*   @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Hello World!");
+        Button btn = new Button();
+        btn.setText("Say 'Hello World'");
+        btn.setOnAction(new EventHandler<ActionEvent>() {
+
+            @Override
+            public void handle(ActionEvent event) {
+                System.out.println("Hello World!");
+            }
+        });
+
+        StackPane root = new StackPane();
+        root.getChildren().add(btn);
+        primaryStage.setScene(new Scene(root, 300, 250));
+        primaryStage.show();
+    }*/
     @Override
     public void start(Stage primaryStage) {
         try {
@@ -52,8 +78,8 @@ public class MainGUI extends Application {
             primaryStage.setY(bounds.getMinY());
             primaryStage.setWidth(bounds.getWidth());
             primaryStage.setHeight(bounds.getHeight());
-            */
-
+            
+*/
 
             //Scene for the menu Preferences
             //Parent rootPreferences = FXMLLoader.load(getClass().getResource("/fxml/preferencesGui.fxml"));
@@ -81,6 +107,6 @@ public class MainGUI extends Application {
     public static void main(String[] args) {
         //Application.launch(args);
         System.setProperty("javafx.preloader", "preload.PreloadApp");
-        Application.launch(MainGUI.class, args);
+        Application.launch(MainGUIconverter.class, args);
     }
 }
