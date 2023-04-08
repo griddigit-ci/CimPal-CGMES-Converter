@@ -13,7 +13,7 @@
 
   <groupId>eu.griddigit</groupId>
   <artifactId>CimPalCGMESConverter</artifactId>
-  <version>2023.1</version>
+  <version>2023.2</version>
 
 
   <build>
@@ -84,12 +84,12 @@
       <groupId>org.apache.poi</groupId>
       <artifactId>poi</artifactId>
       <version>5.2.2</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>commons-codec</artifactId>
-          <groupId>commons-codec</groupId>
-        </exclusion>
-      </exclusions>
+<!--      <exclusions>-->
+<!--&lt;!&ndash;        <exclusion>&ndash;&gt;-->
+<!--&lt;!&ndash;          <artifactId>commons-codec</artifactId>&ndash;&gt;-->
+<!--&lt;!&ndash;          <groupId>commons-codec</groupId>&ndash;&gt;-->
+<!--&lt;!&ndash;        </exclusion>&ndash;&gt;-->
+<!--      </exclusions>-->
     </dependency>
     <dependency>
       <groupId>org.apache.poi</groupId>

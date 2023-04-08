@@ -6,27 +6,23 @@
 
 package application;
 
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import org.apache.commons.io.FileUtils;
 
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
 public class PreferencesController implements Initializable {
-    @FXML
-    private Button btnOK;
     @FXML
     private TextField fCIMnamespace;
     @FXML
     private TextField fcimsnamespace;
     @FXML
     private TextField frdfnamespace;
-    @FXML
-    private Button btnCancel;
     @FXML
     private TextField fIOprefix;
     @FXML
@@ -51,14 +47,11 @@ public class PreferencesController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         prefToGui();
 
-
-
-
     }
 
     @FXML
     //action button OK
-    private void actionBtnOK(ActionEvent actionEvent) {
+    private void actionBtnOK() {
         MainController.prefs.put("CIMnamespace", fCIMnamespace.getText());
         MainController.prefs.put("rdfNamespace", frdfnamespace.getText());
         MainController.prefs.put("cimsNamespace", fcimsnamespace.getText());
@@ -76,13 +69,13 @@ public class PreferencesController implements Initializable {
 
     @FXML
     //action button Cancel
-    private void actionBtnCancel(ActionEvent actionEvent) {
+    private void actionBtnCancel() {
         guiPrefStage.close();
     }
 
     @FXML
     //action button Default
-    private void actionBtnDefault(ActionEvent actionEvent) {
+    private void actionBtnDefault() throws URISyntaxException {
         prefDefault();
         prefToGui();
     }
@@ -94,7 +87,7 @@ public class PreferencesController implements Initializable {
     }
 
     //set the default preferences
-    public static void prefDefault(){
+    public static void prefDefault() throws URISyntaxException {
         MainController.prefs.put("CIMnamespace", "http://iec.ch/TC57/CIM100#");
         MainController.prefs.put("rdfNamespace", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
         MainController.prefs.put("cimsNamespace", "http://iec.ch/TC57/1999/rdf-schema-extensions-19990926#");
@@ -105,11 +98,8 @@ public class PreferencesController implements Initializable {
         MainController.prefs.put("uriEU", "http://iec.ch/TC57/CIM100-European#");
         MainController.prefs.put("prefixOther", "");
         MainController.prefs.put("uriOther", "");
-        MainController.prefs.put("LastWorkingFolder", "/Users/<myhomedir>/"); // it was "C:" before but this was causing issue for MAC
-
+        MainController.prefs.put("LastWorkingFolder", String.valueOf(FileUtils.getUserDirectory()));
     }
-
-
     //set the preferences to the GUI
     private void prefToGui(){
 

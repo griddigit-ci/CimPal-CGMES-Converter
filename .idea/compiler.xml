@@ -9,8 +9,5 @@
         <module name="CimPalCGMESConverter" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="CimPalCGMESConverter" target="11" />
-    </bytecodeTargetLevel>
   </component>
 </project>

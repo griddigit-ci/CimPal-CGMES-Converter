@@ -29,8 +29,6 @@ import java.util.zip.ZipOutputStream;
 
 public class InstanceDataFactory {
 
-    public static Map<Property,Map> shaclConstraints;
-
 
     //Loads one or many models
     public static Map<String,Model> modelLoad(List<File> files, String xmlBase, Lang rdfSourceFormat) throws FileNotFoundException {
@@ -38,21 +36,33 @@ public class InstanceDataFactory {
         Map<String,Model> unionModelMap=new HashMap<>();
         Model modelUnion = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
         Model modelUnionWithoutHeader = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
-        Map prefixMap = modelUnion.getNsPrefixMap();
-        Map prefixMapWithoutHeader = modelUnionWithoutHeader.getNsPrefixMap();
-        for (Object file : files) {
-            if (rdfSourceFormat==null){
-                String extension = FilenameUtils.getExtension(file.toString());
-                if (extension.equals("rdf") || extension.equals("xml")){
-                    rdfSourceFormat=Lang.RDFXML;
-                }else if(extension.equals("ttl")){
-                    rdfSourceFormat=Lang.TURTLE;
-                }else if(extension.equals("jsonld")){
-                    rdfSourceFormat=Lang.JSONLD;
+        Map<String, String> prefixMap = modelUnion.getNsPrefixMap();
+        Map<String, String> prefixMapWithoutHeader = modelUnionWithoutHeader.getNsPrefixMap();
+
+        InputStream inputStream;
+
+        for (File file : files) {
+            String extension = FilenameUtils.getExtension(file.toString());
+            if (extension.equals("zip")){
+                inputStream=InstanceDataFactory.unzip(file);
+                rdfSourceFormat = Lang.RDFXML;
+            }else {
+                switch (extension) {
+                    case "rdf":
+                    case "xml":
+                        rdfSourceFormat = Lang.RDFXML;
+                        break;
+                    case "ttl":
+                        rdfSourceFormat = Lang.TURTLE;
+                        break;
+                    case "jsonld":
+                        rdfSourceFormat = Lang.JSONLD;
+                        break;
                 }
+                inputStream = new FileInputStream(file.toString());
             }
+
             Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
-            InputStream inputStream = new FileInputStream(file.toString());
             RDFDataMgr.read(model, inputStream, xmlBase, rdfSourceFormat);
             prefixMap.putAll(model.getNsPrefixMap());
             prefixMapWithoutHeader.putAll(model.getNsPrefixMap());
@@ -140,38 +150,48 @@ public class InstanceDataFactory {
             List<RDFNode> profileString=model.listObjectsOfProperty(ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#Model.profile")).toList();
             for (RDFNode node: profileString){
                 String nodeString=node.toString();
-                if (nodeString.equals("http://entsoe.eu/CIM/EquipmentCore/3/1") || nodeString.equals("http://entsoe.eu/CIM/EquipmentOperation/3/1") || nodeString.equals("http://entsoe.eu/CIM/EquipmentShortCircuit/3/1")){
-                    keyword="EQ";
-                }else if (nodeString.equals("http://entsoe.eu/CIM/SteadyStateHypothesis/1/1")){
-                    keyword="SSH";
-                }else if (nodeString.equals("http://entsoe.eu/CIM/Topology/4/1")) {
-                    keyword = "TP";
-                }else if (nodeString.equals("http://entsoe.eu/CIM/StateVariables/4/1")) {
-                    keyword = "SV";
-                }else if (nodeString.equals("http://entsoe.eu/CIM/EquipmentBoundary/3/1") || nodeString.equals("http://entsoe.eu/CIM/EquipmentBoundaryOperation/3/1")) {
-                    keyword = "EQBD";
-                }else if (nodeString.equals("http://entsoe.eu/CIM/TopologyBoundary/3/1")) {
-                    keyword = "TPBD";
-                }else if (nodeString.equals("http://iec.ch/TC57/ns/CIM/CoreEquipment-EU/3.0")) {
-                    keyword = "EQ";
-                }else if (nodeString.equals("http://iec.ch/TC57/ns/CIM/Operation-EU/3.0")) {
-                    keyword = "OP";
-                }else if (nodeString.equals("http://iec.ch/TC57/ns/CIM/ShortCircuit-EU/3.0")) {
-                    keyword = "SC";
-                }else if (nodeString.equals("http://iec.ch/TC57/ns/CIM/SteadyStateHypothesis-EU/3.0")){
-                    keyword="SSH";
-                }else if (nodeString.equals("http://iec.ch/TC57/ns/CIM/Topology-EU/3.0")) {
-                    keyword = "TP";
-                }else if (nodeString.equals("http://iec.ch/TC57/ns/CIM/StateVariables-EU/3.0")) {
-                    keyword = "SV";
-                }else if (nodeString.equals("http://iec.ch/TC57/ns/CIM/EquipmentBoundary-EU/3.0")) {
-                    keyword = "EQBD";
-                }else if (nodeString.equals("http://iec.ch/TC57/ns/CIM/DiagramLayout-EU/3.0")) {
-                    keyword = "DL";
-                }else if (nodeString.equals("http://iec.ch/TC57/ns/CIM/GeographicalLocation-EU/3.0")) {
-                    keyword = "GL";
-                }else if (nodeString.equals("http://iec.ch/TC57/ns/CIM/Dynamics-EU/1.0")) {
-                    keyword = "DY";
+                switch (nodeString) {
+                    case "http://entsoe.eu/CIM/EquipmentCore/3/1":
+                    case "http://entsoe.eu/CIM/EquipmentOperation/3/1":
+                    case "http://entsoe.eu/CIM/EquipmentShortCircuit/3/1":
+                    case "http://iec.ch/TC57/ns/CIM/CoreEquipment-EU/3.0":
+                        keyword = "EQ";
+                        break;
+                    case "http://entsoe.eu/CIM/SteadyStateHypothesis/1/1":
+                    case "http://iec.ch/TC57/ns/CIM/SteadyStateHypothesis-EU/3.0":
+                        keyword = "SSH";
+                        break;
+                    case "http://entsoe.eu/CIM/Topology/4/1":
+                    case "http://iec.ch/TC57/ns/CIM/Topology-EU/3.0":
+                        keyword = "TP";
+                        break;
+                    case "http://entsoe.eu/CIM/StateVariables/4/1":
+                    case "http://iec.ch/TC57/ns/CIM/StateVariables-EU/3.0":
+                        keyword = "SV";
+                        break;
+                    case "http://entsoe.eu/CIM/EquipmentBoundary/3/1":
+                    case "http://entsoe.eu/CIM/EquipmentBoundaryOperation/3/1":
+                    case "http://iec.ch/TC57/ns/CIM/EquipmentBoundary-EU/3.0":
+                        keyword = "EQBD";
+                        break;
+                    case "http://entsoe.eu/CIM/TopologyBoundary/3/1":
+                        keyword = "TPBD";
+                        break;
+                    case "http://iec.ch/TC57/ns/CIM/Operation-EU/3.0":
+                        keyword = "OP";
+                        break;
+                    case "http://iec.ch/TC57/ns/CIM/ShortCircuit-EU/3.0":
+                        keyword = "SC";
+                        break;
+                    case "http://iec.ch/TC57/ns/CIM/DiagramLayout-EU/3.0":
+                        keyword = "DL";
+                        break;
+                    case "http://iec.ch/TC57/ns/CIM/GeographicalLocation-EU/3.0":
+                        keyword = "GL";
+                        break;
+                    case "http://iec.ch/TC57/ns/CIM/Dynamics-EU/1.0":
+                        keyword = "DY";
+                        break;
                 }
             }
         }
@@ -194,7 +214,6 @@ public class InstanceDataFactory {
         CustomRDFFormat.RegisterCustomFormatWriters();
 
         String filename=saveProperties.get("filename").toString().toUpperCase();
-        filename=filename.replace(".XML", ".xml"); //TODO make this more intelligent and bring it to GUI
         String showXmlDeclaration=saveProperties.get("showXmlDeclaration").toString();
         String showDoctypeDeclaration=saveProperties.get("showDoctypeDeclaration").toString();
         String tab=saveProperties.get("tab").toString();
@@ -210,6 +229,14 @@ public class InstanceDataFactory {
         boolean dozip=(boolean) saveProperties.get("dozip");
         String showXmlBaseDeclaration = saveProperties.get("showXmlBaseDeclaration").toString();
 
+        if (!dozip) {
+            if (filename.endsWith(".ZIP")){
+                filename = filename.replace(".ZIP", ".xml");
+            }else {
+                filename = filename.replace(".XML", ".xml"); //TODO make this more intelligent and bring it to GUI
+            }
+        }
+
         //Set<Resource> rdfAboutList = null;
         //Set<Resource> rdfEnumList = null;
         Set<Resource> rdfAboutList = (Set<Resource>) saveProperties.get("rdfAboutList");
@@ -221,8 +248,7 @@ public class InstanceDataFactory {
         String fileDialogTitle=saveProperties.get("fileDialogTitle").toString();
 
         //save file
-        OutputStream outXML=null;
-        ZipOutputStream outzip=null;
+        OutputStream outXML;
 
         if(useFileDialog) {
             outXML = fileSaveDialog(fileDialogTitle, filename, extensionName, fileExtension);

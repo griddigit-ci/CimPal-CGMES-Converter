@@ -1,8 +1,3 @@
-/*
- * Licensed under the EUPL-1.2-or-later.
- * Copyright (c) 2022, gridDigIt Kft. All rights reserved.
- * @author Chavdar Ivanov
- */
 package customWriter.jena;
 
 import org.apache.jena.util.iterator.Map1Iterator;
@@ -15,6 +10,7 @@ import java.util.*;
  *
  * Has to be copied, because the original class is package private and {@link customWriter.CustomBaseXMLWriter} needs it.
  *
+ * @author mz
  */
 public class CustomRelation<T> {
     final private Map<T, Set<T>> rows;

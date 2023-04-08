@@ -1,8 +1,3 @@
-/*
- * Licensed under the EUPL-1.2-or-later.
- * Copyright (c) 2022, gridDigIt Kft. All rights reserved.
- * @author Chavdar Ivanov
- */
 package customWriter;
 
 import customWriter.jena.CustomRelation;
@@ -35,6 +30,7 @@ import java.util.regex.Pattern;
 /**
  * This is a copy of {@link BaseXMLWriter} with custom adjustments.
  *
+ * @author mz
  */
 public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
     private static final String newline =
@@ -128,8 +124,6 @@ public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
     Boolean showXmlEncoding = null;
 
     String instanceData = null;
-
-    String showXmlBaseDeclaration = null;
 
     protected Boolean showDoctypeDeclaration = Boolean.FALSE;
 
@@ -659,10 +653,6 @@ public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
             //return setinstanceData(propValue);
             String result = instanceData;
             instanceData = (String) propValue;
-            return result;
-        } else if (propName.equalsIgnoreCase("showXmlBaseDeclaration")) {
-            String result = showXmlBaseDeclaration;
-            showXmlBaseDeclaration = (String) propValue;
             return result;
         } else if(propName.equalsIgnoreCase("aboutRules")) {
             return setAboutRules((Set<Resource>) propValue);

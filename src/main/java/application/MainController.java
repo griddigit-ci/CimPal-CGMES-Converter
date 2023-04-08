@@ -8,18 +8,24 @@ package application;
 import core.InstanceDataFactory;
 import core.ModelManipulationFactory;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.text.Font;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.riot.Lang;
 
+import javax.swing.*;
 import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -34,9 +40,11 @@ import static core.ModelManipulationFactory.ConvertCGMESv2v3;
 public class MainController implements Initializable {
 
 
-    public TabPane tabPaneConstraintsDetails;
+
     public Button btnResetIGM;
     public Tab tabOutputWindow;
+    public Font x3;
+    public TabPane tabPaneConstraintsDetails;
     @FXML
     private TextField fPathIGM;
 
@@ -100,59 +108,21 @@ public class MainController implements Initializable {
         foutputWindowVar = foutputWindow;
 
         try {
-            if (!Preferences.userRoot().nodeExists("CimPal")){
-                prefs = Preferences.userRoot().node("CimPal");
+            if (!Preferences.userRoot().nodeExists("CimPalCGMESConverter")){
+                prefs = Preferences.userRoot().node("CimPalCGMESConverter");
                 //set the default preferences
                 PreferencesController.prefDefault();
             }else{
-                prefs = Preferences.userRoot().node("CimPal");
+                prefs = Preferences.userRoot().node("CimPalCGMESConverter");
             }
         } catch (BackingStoreException e) {
             e.printStackTrace();
-        }
-
-        // load all profile models
-        loadDataMap= new HashMap<>();
-        Lang rdfProfileFormat=null;
-        Map<String,Model> profileModelMap = null;
-        String xmlBase = "http://iec.ch/TC57/CIM100";
-        List<File> modelFiles = new LinkedList<>();
-        File EQ;
-        File FH;
-        File SC;
-        File OP;
-        File SSH;
-        File TP;
-        File SV;
-        File EQBD;
-        try {
-            EQ = new File(getClass().getResource("/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_EQ.rdf").toURI())  ;
-            FH = new File(getClass().getResource("/RDFSCGMESv3/FileHeader_RDFS2019.rdf").toURI())  ;
-            EQBD = new File(getClass().getResource("/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_EQBD.rdf").toURI())  ;
-            OP = new File(getClass().getResource("/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_OP.rdf").toURI())  ;
-            SC = new File(getClass().getResource("/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SC.rdf").toURI())  ;
-            SSH = new File(getClass().getResource("/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SSH.rdf").toURI())  ;
-            SV = new File(getClass().getResource("/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SV.rdf").toURI())  ;
-            TP = new File(getClass().getResource("/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_TP.rdf").toURI())  ;
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
-        modelFiles.add(EQ);
-        modelFiles.add(FH);
-        modelFiles.add(EQBD);
-        modelFiles.add(OP);
-        modelFiles.add(SC);
-        modelFiles.add(SSH);
-        modelFiles.add(SV);
-        modelFiles.add(TP);
 
-        try {
-            profileModelMap = InstanceDataFactory.modelLoad(modelFiles, xmlBase, rdfProfileFormat);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+        loadDataMap= new HashMap<>();
 
-        loadDataMap.put("profileModelMap",profileModelMap);
     }
 
     @FXML
@@ -183,15 +153,21 @@ public class MainController implements Initializable {
 
     @FXML
     //action button Browse IGM
-    private void actionBrowseIGM() {
+    private void actionBrowseIGM() throws URISyntaxException {
         progressBar.setProgress(0);
 
         //select file 1
         FileChooser filechooser = new FileChooser();
         filechooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Instance files", "*.xml","*.zip"));
-        filechooser.setInitialDirectory(new File(MainController.prefs.get("LastWorkingFolder","")));
         List<File> fileL;
-        fileL = filechooser.showOpenMultipleDialog(null);
+        filechooser.setInitialDirectory(new File(MainController.prefs.get("LastWorkingFolder", "")));
+        try {
+            fileL = filechooser.showOpenMultipleDialog(null);
+        }catch (Exception e){
+            filechooser.setInitialDirectory(new File(getClass().getProtectionDomain().getCodeSource().getLocation().toURI().getPath()));
+            fileL = filechooser.showOpenMultipleDialog(null);
+        }
+
 
         if (fileL != null) {// the file is selected
 
@@ -331,7 +307,84 @@ public class MainController implements Initializable {
 
     @FXML
     //action button Convert
-    private void actionBtnConvert() throws IOException {
+    private void actionBtnConvert() throws IOException, URISyntaxException {
+
+        if (loadDataMap.size()==0) {
+            // load all profile models
+            Lang rdfProfileFormat = null;
+            Map<String, Model> profileModelMap = null;
+            String xmlBase = "http://iec.ch/TC57/CIM100";
+            List<File> modelFiles = new LinkedList<>();
+            File EQ;
+            File FH;
+            File SC;
+            File OP;
+            File SSH;
+            File TP;
+            File SV;
+            File EQBD;
+
+            String pathclass = getClass().getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+            File jarFile = new File(pathclass);
+            String jarDir = jarFile.getParentFile().getAbsolutePath();
+
+            EQ = new File(jarDir + "/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_EQ.rdf");
+            FH = new File(jarDir + "/RDFSCGMESv3/FileHeader_RDFS2019.rdf");
+            EQBD = new File(jarDir + "/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_EQBD.rdf");
+            OP = new File(jarDir + "/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_OP.rdf");
+            SC = new File(jarDir + "/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SC.rdf");
+            SSH = new File(jarDir + "/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SSH.rdf");
+            SV = new File(jarDir + "/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SV.rdf");
+            TP = new File(jarDir + "/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_TP.rdf");
+
+            if (!EQ.exists() && !FH.exists() && !EQBD.exists() && !OP.exists() && !SC.exists() && !SSH.exists() && !SV.exists() && !TP.exists()){
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setContentText("RFS folder does not exist. Please select the folder with Select or cancel conversion.");
+                alert.setHeaderText(null);
+                alert.setTitle("Warning - RDFS folder does not exist");
+                ButtonType btnYes = new ButtonType("Select RDFS folder");
+                ButtonType btnNo = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+                alert.getButtonTypes().setAll(btnYes, btnNo);
+                Optional<ButtonType> result = alert.showAndWait();
+                if (result.get() == btnNo) {
+                    return;
+                }else if (result.get() == btnYes){
+                    DirectoryChooser directoryChooser = new DirectoryChooser();
+                    directoryChooser.setInitialDirectory(new File(MainController.prefs.get("LastWorkingFolder","")));
+                    File folder = directoryChooser.showDialog(null);
+                    String rdfsdir = folder.getAbsolutePath();
+                    EQ = new File(rdfsdir + "/IEC61970-600-2_CGMES_3_0_0_RDFS2020_EQ.rdf");
+                    FH = new File(rdfsdir + "/FileHeader_RDFS2019.rdf");
+                    EQBD = new File(rdfsdir + "/IEC61970-600-2_CGMES_3_0_0_RDFS2020_EQBD.rdf");
+                    OP = new File(rdfsdir + "/IEC61970-600-2_CGMES_3_0_0_RDFS2020_OP.rdf");
+                    SC = new File(rdfsdir + "/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SC.rdf");
+                    SSH = new File(rdfsdir + "/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SSH.rdf");
+                    SV = new File(rdfsdir + "/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SV.rdf");
+                    TP = new File(rdfsdir + "/IEC61970-600-2_CGMES_3_0_0_RDFS2020_TP.rdf");
+                }
+            }
+
+            modelFiles.add(EQ);
+            modelFiles.add(FH);
+            modelFiles.add(EQBD);
+            modelFiles.add(OP);
+            modelFiles.add(SC);
+            modelFiles.add(SSH);
+            modelFiles.add(SV);
+            modelFiles.add(TP);
+
+            try {
+                profileModelMap = InstanceDataFactory.modelLoad(modelFiles, xmlBase, rdfProfileFormat);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+
+            loadDataMap.put("profileModelMap", profileModelMap);
+        }
+
+
+
+
         progressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
 
         if (fCBconvIGM.isSelected()){
@@ -362,6 +415,5 @@ public class MainController implements Initializable {
     public void appendText(String valueOf) {
         Platform.runLater(() -> foutputWindow.appendText(valueOf));
     }
-
 }
 

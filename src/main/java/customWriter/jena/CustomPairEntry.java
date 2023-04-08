@@ -1,8 +1,3 @@
-/*
- * Licensed under the EUPL-1.2-or-later.
- * Copyright (c) 2022, gridDigIt Kft. All rights reserved.
- * @author Chavdar Ivanov
- */
 package customWriter.jena;
 
 
@@ -11,6 +6,7 @@ package customWriter.jena;
  *
  * Has to be copied, because the original class is package private and {@link customWriter.CustomBaseXMLWriter} needs it.
  *
+ * @author mz
  */
 public class CustomPairEntry<K,V>  implements java.util.Map.Entry<K,V>  {
     K a;

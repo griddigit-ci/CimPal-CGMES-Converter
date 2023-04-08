@@ -65,13 +65,6 @@ public static Map<String,String> nameMap;
         //RDFFormat rdfFormat = CustomRDFFormat.RDFXML_CUSTOM_PLAIN;
 
 
-
-        //TODO do something to be able to import zipped files
-        //for (File item : MainController.IDModel) {
-        //    if (item.getName().toLowerCase().endsWith(".zip")) {
-        //    }
-
-        //}
         //TODO to be improved what file names should be assigned. Now it takes same names
         nameMap=new HashMap<>();
         for (File item : MainController.IDModel){

@@ -1,8 +1,3 @@
-/*
- * Licensed under the EUPL-1.2-or-later.
- * Copyright (c) 2022, gridDigIt Kft. All rights reserved.
- * @author Chavdar Ivanov
- */
 package customWriter;
 
 import org.apache.jena.rdf.model.*;
@@ -12,6 +7,7 @@ import java.io.PrintWriter;
 /**
  * similar to {@link CustomBasic}. Prints the plain result with the rdf:Description replaced
  *
+ * @author mz
  */
 public class CustomBasicPretty extends CustomBasic {
 

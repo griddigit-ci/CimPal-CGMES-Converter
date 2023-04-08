@@ -1,8 +1,3 @@
-/*
- * Licensed under the EUPL-1.2-or-later.
- * Copyright (c) 2022, gridDigIt Kft. All rights reserved.
- * @author Chavdar Ivanov
- */
 package customWriter;
 
 import org.apache.jena.rdf.model.*;
@@ -15,8 +10,9 @@ import java.io.PrintWriter;
 import java.util.*;
 
 /**
- * This is similar to {@link org.apache.jena.rdfxml.xmloutput.impl.RDFXML_Basic} some parts are copied.
+ * This is similar to {@link org.apache.jena.rdfxml.xmloutput.impl.Basic} some parts are copied.
  *
+ * @author mz
  */
 public class CustomBasic extends CustomBaseXMLWriter {
     protected String space;
@@ -25,7 +21,7 @@ public class CustomBasic extends CustomBaseXMLWriter {
     protected Set<Resource> performedPleasingObjects = new HashSet<>();
     protected Set<Resource> aboutRules = new HashSet<>();
     protected boolean useAboutRules = false;
-    //protected boolean showXmlBaseDeclaration = false;
+    //protected boolean instanceData = false;
 
     protected Set<Resource> enumRules = new HashSet<>();
     protected boolean useEnumRules = false;
@@ -86,9 +82,7 @@ public class CustomBasic extends CustomBaseXMLWriter {
         String xmlns = xmlnsDecl();
         writer.print( "<" + rdfEl( "RDF" ) + xmlns );
         if (null != xmlBase && xmlBase.length() > 0)
-            if (this.showXmlBaseDeclaration.equals("true")) {
-                writer.print("\n  xml:base=" + substitutedAttribute(xmlBase));
-            }
+            writer.print( "\n  xml:base=" + substitutedAttribute( xmlBase ) );
         writer.println( " > " );
     }
 
@@ -199,9 +193,18 @@ public class CustomBasic extends CustomBaseXMLWriter {
         if (r.isAnon()) {
             writer.print(rdfAt("nodeID") + "=" + attributeQuoted(anonId(r)));
         } else {
-            boolean isAbout = aboutRules.contains(type.getObject());
-            String placeholder = isAbout ? "about" : "ID";
-            String url = relativize(r.getURI());
+            boolean isAbout=false;
+            String placeholder;
+            String url;
+            if (type!=null) {
+                isAbout = aboutRules.contains(type.getObject());
+                placeholder = isAbout ? "about" : "ID";
+                url = relativize(r.getURI());
+            }else {
+                isAbout=true;
+                placeholder = isAbout ? "about" : "ID";
+                url = relativize(r.getURI());
+            }
 
             if(!isAbout)
             {
@@ -215,6 +218,9 @@ public class CustomBasic extends CustomBaseXMLWriter {
                         url = r.getLocalName();
                     }else{
                         url = r.toString();
+                    }
+                    if (isAbout){
+                        url = "#"+r.getLocalName();
                     }
                 }
             }
