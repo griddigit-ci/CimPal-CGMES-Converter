@@ -39,13 +39,21 @@ public class InstanceDataFactory {
         Map<String, String> prefixMap = modelUnion.getNsPrefixMap();
         Map<String, String> prefixMapWithoutHeader = modelUnionWithoutHeader.getNsPrefixMap();
 
-        InputStream inputStream;
+        List<InputStream> inputStreamList = null;
+        InputStream inputStream = null;
+        boolean singlezip = false;
 
         for (File file : files) {
             String extension = FilenameUtils.getExtension(file.toString());
             if (extension.equals("zip")){
-                inputStream=InstanceDataFactory.unzip(file);
+                inputStreamList=InstanceDataFactory.unzip(file);
                 rdfSourceFormat = Lang.RDFXML;
+                if (inputStreamList.size()==1){
+                    singlezip=true;
+                    inputStream=inputStreamList.get(0);
+                }else{
+                    singlezip=false;
+                }
             }else {
                 switch (extension) {
                     case "rdf":
@@ -60,28 +68,54 @@ public class InstanceDataFactory {
                         break;
                 }
                 inputStream = new FileInputStream(file.toString());
+                singlezip=true;
             }
 
-            Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
-            RDFDataMgr.read(model, inputStream, xmlBase, rdfSourceFormat);
-            prefixMap.putAll(model.getNsPrefixMap());
-            prefixMapWithoutHeader.putAll(model.getNsPrefixMap());
+            if (singlezip){
+                Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+                RDFDataMgr.read(model, inputStream, xmlBase, rdfSourceFormat);
+                prefixMap.putAll(model.getNsPrefixMap());
+                prefixMapWithoutHeader.putAll(model.getNsPrefixMap());
 
-            //get profile short name for CGMES v2.4, keyword for CGMES v3
-            String keyword=getProfileKeyword(model);
-            if (FilenameUtils.getName(file.toString()).equals("FileHeader.rdf")){
-                keyword="FH";
-            }
-            if (!keyword.equals("")) {
-                unionModelMap.put(keyword, model);
+                //get profile short name for CGMES v2.4, keyword for CGMES v3
+                String keyword=getProfileKeyword(model);
+                if (FilenameUtils.getName(file.toString()).equals("FileHeader.rdf")){
+                    keyword="FH";
+                }
+                if (!keyword.equals("")) {
+                    unionModelMap.put(keyword, model);
+                }else{
+                    unionModelMap.put(FilenameUtils.getName(file.toString()), model);
+                }
+
+                if (!keyword.equals("FH")) {
+                    modelUnionWithoutHeader.add(model);
+                }
+                modelUnion.add(model);
             }else{
-                unionModelMap.put(FilenameUtils.getName(file.toString()), model);
-            }
+                for (InputStream inputStreamItem : inputStreamList) {
+                    Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+                    RDFDataMgr.read(model, inputStreamItem, xmlBase, rdfSourceFormat);
+                    prefixMap.putAll(model.getNsPrefixMap());
+                    prefixMapWithoutHeader.putAll(model.getNsPrefixMap());
 
-            if (!keyword.equals("FH")) {
-                modelUnionWithoutHeader.add(model);
+                    //get profile short name for CGMES v2.4, keyword for CGMES v3
+                    String keyword=getProfileKeyword(model);
+                    if (FilenameUtils.getName(file.toString()).equals("FileHeader.rdf")){
+                        keyword="FH";
+                    }
+                    if (!keyword.equals("")) {
+                        unionModelMap.put(keyword, model);
+                    }else{
+                        unionModelMap.put(FilenameUtils.getName(file.toString()), model);
+                    }
+
+                    if (!keyword.equals("FH")) {
+                        modelUnionWithoutHeader.add(model);
+                    }
+                    modelUnion.add(model);
+                }
             }
-            modelUnion.add(model);
         }
         modelUnion.setNsPrefixes(prefixMap);
         modelUnionWithoutHeader.setNsPrefixes(prefixMap);
@@ -348,7 +382,8 @@ public class InstanceDataFactory {
         return out;
     }
 
-    public static InputStream unzip(File selectedFile) {
+    public static List<InputStream> unzip(File selectedFile) {
+        List<InputStream> inputstreamlist = new LinkedList<>();
         InputStream inputStream = null;
         try{
             ZipFile zipFile = new ZipFile(selectedFile);
@@ -374,6 +409,16 @@ public class InstanceDataFactory {
 
                     try{
                         inputStream = zipFile.getInputStream(entry);
+                        inputstreamlist.add(inputStream);
+                        if (entry.getName().contains("_EQ")){
+                            ModelManipulationFactory.nameMap.put("EQ", entry.getName());
+                        }else if (entry.getName().contains("_SSH")){
+                            ModelManipulationFactory.nameMap.put("SSH", entry.getName());
+                        }else if (entry.getName().contains("_SV")){
+                            ModelManipulationFactory.nameMap.put("SV", entry.getName());
+                        }else if (entry.getName().contains("_TP")){
+                            ModelManipulationFactory.nameMap.put("TP", entry.getName());
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -382,7 +427,7 @@ public class InstanceDataFactory {
         } catch(IOException e){
             throw new RuntimeException("Error unzipping file " + selectedFile, e);
         }
-        return inputStream;
+        return inputstreamlist;
     }
 
     private static boolean isValidDestPath(String targetDir, String destPathStr) {
