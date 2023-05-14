@@ -85,6 +85,7 @@ public static Map<String,String> nameMap;
         Model modelSSH = baseInstanceModelMap.get("SSH");
         Model modelSV = baseInstanceModelMap.get("SV");
         Model modelTP = baseInstanceModelMap.get("TP");
+        Model modelTPBD = baseInstanceModelMap.get("TPBD");
 
         Map<String,Model> convertedModelMap=new HashMap<>();
 
@@ -138,19 +139,49 @@ public static Map<String,String> nameMap;
                 }else if (stmtH.getObject().asLiteral().getString().equals("http://entsoe.eu/CIM/EquipmentOperation/3/1")) {
                     convEQModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral("http://iec.ch/TC57/ns/CIM/Operation-EU/3.0")));
                 }
-            } else {
+            } else if (stmtH.getPredicate().getLocalName().equals("Model.created")) {
+                if (!stmtH.getObject().toString().endsWith("Z")){
+                    convEQModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral(stmtH.getObject().toString()+"Z")));
+                }else{
+                    convEQModel.add(stmtH);
+                }
+
+            } else if (stmtH.getPredicate().getLocalName().equals("Model.scenarioTime")) {
+                if (!stmtH.getObject().toString().endsWith("Z")){
+                    convEQModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral(stmtH.getObject().toString()+"Z")));
+                }else{
+                    convEQModel.add(stmtH);
+                }
+            }else{
                 convEQModel.add(stmtH);
             }
         }
 
         //add header for SSH
+        RDFNode sshMAS = null;
         headerRes = modelSSH.listSubjectsWithProperty(RDF.type, (RDFNode) ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#","FullModel")).nextResource();
         for (StmtIterator n = modelSSH.listStatements(new SimpleSelector(headerRes, null, (RDFNode) null)); n.hasNext(); ) {
             Statement stmtH = n.next();
             if (stmtH.getPredicate().getLocalName().equals("Model.profile")) {
                 convSSHModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral("http://iec.ch/TC57/ns/CIM/SteadyStateHypothesis-EU/3.0")));
-            } else {
+            } else if (stmtH.getPredicate().getLocalName().equals("Model.created")) {
+                if (!stmtH.getObject().toString().endsWith("Z")){
+                    convSSHModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral(stmtH.getObject().toString()+"Z")));
+                }else{
+                    convSSHModel.add(stmtH);
+                }
+
+            } else if (stmtH.getPredicate().getLocalName().equals("Model.scenarioTime")) {
+                if (!stmtH.getObject().toString().endsWith("Z")){
+                    convSSHModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral(stmtH.getObject().toString()+"Z")));
+                }else {
+                    convSSHModel.add(stmtH);
+                }
+            }else{
                 convSSHModel.add(stmtH);
+            }
+            if (stmtH.getPredicate().getLocalName().equals("Model.modelingAuthoritySet")) {
+                sshMAS=stmtH.getObject();
             }
         }
 
@@ -160,9 +191,28 @@ public static Map<String,String> nameMap;
             Statement stmtH = n.next();
             if (stmtH.getPredicate().getLocalName().equals("Model.profile")) {
                 convSVModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral("http://iec.ch/TC57/ns/CIM/StateVariables-EU/3.0")));
-            } else {
+            } else if (stmtH.getPredicate().getLocalName().equals("Model.created")) {
+                if (!stmtH.getObject().toString().endsWith("Z")){
+                    convSVModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral(stmtH.getObject().toString()+"Z")));
+                }else{
+                    convSVModel.add(stmtH);
+                }
+
+            } else if (stmtH.getPredicate().getLocalName().equals("Model.scenarioTime")) {
+                if (!stmtH.getObject().toString().endsWith("Z")){
+                    convSVModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral(stmtH.getObject().toString()+"Z")));
+                }else{
+                    convSVModel.add(stmtH);
+                }
+            }else{
                 convSVModel.add(stmtH);
             }
+            if (stmtH.getPredicate().getLocalName().equals("Model.modelingAuthoritySet")) {
+                convSVModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), sshMAS));
+            }
+        }
+        if (!convSVModel.listStatements(new SimpleSelector(null, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#","Model.modelingAuthoritySet"),(RDFNode) null)).hasNext()){
+            convSVModel.add(ResourceFactory.createStatement(headerRes, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#","Model.modelingAuthoritySet"), sshMAS));
         }
 
         //add header for TP
@@ -171,7 +221,20 @@ public static Map<String,String> nameMap;
             Statement stmtH = n.next();
             if (stmtH.getPredicate().getLocalName().equals("Model.profile")) {
                 convTPModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral("http://iec.ch/TC57/ns/CIM/Topology-EU/3.0")));
-            } else {
+            } else if (stmtH.getPredicate().getLocalName().equals("Model.created")) {
+                if (!stmtH.getObject().toString().endsWith("Z")){
+                    convTPModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral(stmtH.getObject().toString()+"Z")));
+                }else {
+                    convTPModel.add(stmtH);
+                }
+
+            } else if (stmtH.getPredicate().getLocalName().equals("Model.scenarioTime")) {
+                if (!stmtH.getObject().toString().endsWith("Z")){
+                    convTPModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral(stmtH.getObject().toString()+"Z")));
+                }else{
+                    convTPModel.add(stmtH);
+                }
+            }else{
                 convTPModel.add(stmtH);
             }
         }
@@ -437,6 +500,15 @@ public static Map<String,String> nameMap;
         Property newPre;
         RDFNode newObj;
 
+        List<String> excludeTPBDattributes= new LinkedList<>();
+        excludeTPBDattributes.add("TopologicalNode.fromEndName");
+        excludeTPBDattributes.add("TopologicalNode.fromEndNameTso");
+        excludeTPBDattributes.add("TopologicalNode.fromEndIsoCode");
+        excludeTPBDattributes.add("TopologicalNode.toEndName");
+        excludeTPBDattributes.add("TopologicalNode.toEndNameTso");
+        excludeTPBDattributes.add("TopologicalNode.toEndIsoCode");
+        excludeTPBDattributes.add("TopologicalNode.boundaryPoint");
+
         //convert SV
         for (StmtIterator c = modelSV.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); c.hasNext(); ) { // loop on all classes
             Statement stmtC = c.next();
@@ -507,6 +579,34 @@ public static Map<String,String> nameMap;
 
         //convert TP
         //TODO the 2 DC related associations
+        for (StmtIterator c = modelTP.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); c.hasNext(); ) { // loop on all classes
+            Statement stmtC = c.next();
+            String className = stmtC.getObject().asResource().getLocalName();
+            if (className.equals("Terminal")) {
+                RDFNode tnProp = modelTP.getRequiredProperty(stmtC.getSubject(),ResourceFactory.createProperty(cim16NS,"Terminal.TopologicalNode")).getObject();
+                Resource tnRes = tnProp.asResource();
+                if (modelTPBD.listStatements(new SimpleSelector(tnRes,null,(RDFNode) null)).hasNext()){
+                    Statement stmtArebase = null;
+                    for (StmtIterator a = modelTPBD.listStatements(new SimpleSelector(tnRes,null,(RDFNode) null)); a.hasNext(); ) { // loop on all attributes
+                        Statement stmtA = a.next();
+                        stmtArebase = rebaseStatement(stmtA, cim17NS, euNS);
+                        if (!excludeTPBDattributes.contains(stmtA.getPredicate().getLocalName())) {
+                            if (stmtA.getPredicate().getLocalName().equals(RDF.type.toString())) {
+                                convTPModel.add(stmtArebase.getSubject(), RDF.type, ResourceFactory.createProperty(cim17NS, "TopologicalNode"));
+                            }else{
+                                convTPModel.add(stmtArebase.getSubject(), stmtArebase.getPredicate(), stmtArebase.getObject());
+                            }
+                            convTPModel.add(stmtArebase.getSubject(), mrid, ResourceFactory.createPlainLiteral(stmtArebase.getSubject().getLocalName().split("_",2)[1]));
+
+                        }
+                    }
+                    Resource cnRes = modelTPBD.listStatements(new SimpleSelector(null,ResourceFactory.createProperty(cim16NS,"ConnectivityNode.TopologicalNode"),tnProp)).next().getSubject();
+                    convTPModel.add(ResourceFactory.createResource(cim17NS+cnRes.getLocalName()), RDF.type, ResourceFactory.createProperty(cim17NS, "ConnectivityNode"));
+                    assert stmtArebase != null;
+                    convTPModel.add(ResourceFactory.createResource(cim17NS+cnRes.getLocalName()), ResourceFactory.createProperty(cim17NS,"ConnectivityNode.TopologicalNode"), stmtArebase.getSubject());
+                }
+            }
+        }
 
         //check if EQ has ConnectivityNodes
         int hasCN=0;
@@ -568,7 +668,16 @@ public static Map<String,String> nameMap;
                     newPre=stmtArebase.getPredicate();
                     newObj=stmtArebase.getObject();
 
-                    convSSHModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                    if (className.equals("EquivalentInjection") && (newPre.getLocalName().equals("EquivalentInjection.regulationStatus") || newPre.getLocalName().equals("EquivalentInjection.regulationTarget"))){
+                        if (modelEQ.listStatements(new SimpleSelector(stmtC.getSubject(),ResourceFactory.createProperty(cim16NS,"EquivalentInjection.regulationCapability"), (RDFNode) null)).hasNext()){
+                            String regulationCapability=modelEQ.listStatements(new SimpleSelector(stmtC.getSubject(),ResourceFactory.createProperty(cim16NS,"EquivalentInjection.regulationCapability"), (RDFNode) null)).next().getObject().toString();
+                            if (regulationCapability.equals("true")){
+                                convSSHModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                            }
+                        }
+                    }else {
+                        convSSHModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                    }
 
                     if (newPre.getLocalName().equals("IdentifiedObject.mRID")) {
                         hasMRid = 1;
@@ -603,6 +712,7 @@ public static Map<String,String> nameMap;
                 int hasMRid = 0;
                 int hasDir = 0;
                 int hasTerSeqNum = 0;
+                int hasContainment = 0;
 
                 for (StmtIterator a = modelEQ.listStatements(new SimpleSelector(stmtC.getSubject(), null, (RDFNode) null)); a.hasNext(); ) { // loop on all attributes
                     Statement stmtA = a.next();
@@ -650,7 +760,13 @@ public static Map<String,String> nameMap;
                         }
                     }
 
-                    convEQModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                    if (newPre.getLocalName().equals("Equipment.aggregate")){
+                        if (!className.equals("EquivalentBranch") && !className.equals("EquivalentShunt") && !className.equals("EquivalentInjection")) {
+                            convEQModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                        }
+                    }else{
+                        convEQModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                    }
 
                     if (newPre.getLocalName().equals("IdentifiedObject.mRID")) {
                         hasMRid = 1;
@@ -661,6 +777,9 @@ public static Map<String,String> nameMap;
                     if (newPre.getLocalName().equals("ACDCTerminal.sequenceNumber")) {
                         hasTerSeqNum = 1;
                     }
+                    if (newPre.getLocalName().equals("Equipment.EquipmentContainer")) {
+                        hasContainment = 1;
+                    }
 
                 }
                 assert newSub != null;
@@ -669,7 +788,9 @@ public static Map<String,String> nameMap;
                     //if contains SvStatus add Equipment.inService with the same status
                     if (modelSV.contains(ResourceFactory.createResource(cim16NS+newSub.getLocalName()),ResourceFactory.createProperty(cim16NS, "SvStatus.inService"))){
                         Statement oldObj = modelSV.getRequiredProperty(ResourceFactory.createResource(cim16NS+newSub.getLocalName()),ResourceFactory.createProperty(cim16NS, "SvStatus.inService"));
-                        convSSHModel.add(ResourceFactory.createStatement(newSub, RDF.type, ResourceFactory.createProperty(cim17NS, "Equipment")));
+                        if (!modelSSH.listStatements(new SimpleSelector(null, RDF.type, ResourceFactory.createProperty(cim16NS, className))).hasNext()) {
+                            convSSHModel.add(ResourceFactory.createStatement(newSub, RDF.type, ResourceFactory.createProperty(cim17NS, "Equipment")));
+                        }
                         convSSHModel.add(ResourceFactory.createStatement(newSub, ResourceFactory.createProperty(cim17NS, "Equipment.inService"), oldObj.getObject()));
                     }else {
                         //if it does not contain SvStatus, check ACDCTerminal.connected in SSH. If 1 or 2 Terminal device => connected false means inservice false; if 3 terminals if 2 terminals are true then inservice is true
@@ -690,20 +811,22 @@ public static Map<String,String> nameMap;
                     }
 
 
-
-                    convSSHModel.add(ResourceFactory.createStatement(newSub, RDF.type, ResourceFactory.createProperty(cim17NS, "Equipment")));
+                    if (!modelSSH.listStatements(new SimpleSelector(null, RDF.type, ResourceFactory.createProperty(cim16NS, className))).hasNext()) {
+                        convSSHModel.add(ResourceFactory.createStatement(newSub, RDF.type, ResourceFactory.createProperty(cim17NS, "Equipment")));
+                    }
                     convSSHModel.add(ResourceFactory.createStatement(newSub, ResourceFactory.createProperty(cim17NS, "Equipment.inService"), ResourceFactory.createPlainLiteral("true")));
                 }
 
                 //add SvStatus.inservice to SV
                 if (getSvStInService.contains(className)) {
-                    if (!modelSV.contains(ResourceFactory.createResource(cim16NS+newSub.getLocalName()),ResourceFactory.createProperty(cim16NS, "SvStatus.inService"))){
+                    //if (!modelSV.contains(ResourceFactory.createResource(cim16NS+newSub.getLocalName()),ResourceFactory.createProperty(cim16NS, "SvStatus.inService"))) {
+                    if (!modelSV.listStatements(new SimpleSelector(null,ResourceFactory.createProperty(cim16NS, "SvStatus.ConductingEquipment"),ResourceFactory.createProperty(newSub.toString()))).hasNext()){
                         //Statement oldObj = modelSV.getRequiredProperty(ResourceFactory.createResource(cim16NS+newSub.getLocalName()),ResourceFactory.createProperty(cim16NS, "SvStatus.inService"));
                         //Resource newSvStatusres = ResourceFactory.createResource(cim17NS + newSub.getLocalName());
                         //convSVModel.add(ResourceFactory.createStatement(newSvStatusres, RDF.type, ResourceFactory.createProperty(cim17NS, "SvStatus")));
                         //convSVModel.add(ResourceFactory.createStatement(newSvStatusres, ResourceFactory.createProperty(cim17NS, "SvStatus.inService"), oldObj.getObject()));
                         //convSVModel.add(ResourceFactory.createStatement(newSvStatusres, ResourceFactory.createProperty(cim17NS, "SvStatus.ConductingEquipment"), ResourceFactory.createProperty(newSub.toString())));
-                   // }else {
+                        // }else {
                         String uuidSvStatus = String.valueOf(UUID.randomUUID());
                         Resource newSvStatusres = ResourceFactory.createResource(cim17NS + "_" + uuidSvStatus);
                         convSVModel.add(ResourceFactory.createStatement(newSvStatusres, RDF.type, ResourceFactory.createProperty(cim17NS, "SvStatus")));
@@ -720,11 +843,33 @@ public static Map<String,String> nameMap;
                     convEQModel.add(ResourceFactory.createStatement(rebaseResource(stmtC.getSubject(), cim17NS), ResourceFactory.createProperty(cim17NS, "OperationalLimitType.direction"), ResourceFactory.createProperty(cim17NS, "OperationalLimitDirectionKind.absoluteValue")));
                 }
 
-                //add OperationalLimitType.acceptableDuration if not there
-                if (hasTerSeqNum == 0) {
-                    //TODO if in the list of single terminal devices add 1
-                    //if more add 1, 2, 3
-                    //convEQModel.add(ResourceFactory.createStatement(rebaseResource(stmtC.getSubject(), cim17NS), ResourceFactory.createProperty(cim17NS,"ACDCTerminal.sequenceNumber"), ResourceFactory.createProperty(cim17NS,"OperationalLimitDirectionKind.absoluteValue")));
+                //add ACDCTerminal.sequenceNumber if not there
+                if (className.equals("Terminal")) {
+                    if (hasTerSeqNum == 0) {
+                        Statement condEQ = modelEQ.getRequiredProperty(stmtC.getSubject(),ResourceFactory.createProperty(cim16NS,"Terminal.ConductingEquipment"));
+                        List<Statement> terminals = modelEQ.listStatements(new SimpleSelector(null,ResourceFactory.createProperty(cim16NS,"Terminal.ConductingEquipment"),condEQ.getObject())).toList();
+                        if (terminals.size()==1){
+                            convEQModel.add(rebaseResource(stmtC.getSubject(), cim17NS),ResourceFactory.createProperty(cim17NS,"ACDCTerminal.sequenceNumber"),ResourceFactory.createPlainLiteral("1"));
+
+                        }else{ //TODO if more than 1 terminal
+
+                        }
+                    }
+                }
+
+                //Add line is missing' also assumes that there are no lines in the model
+                if (className.equals("ACLineSegment")) {
+                    if (hasContainment == 0) {
+
+                        String uuidLine = String.valueOf(UUID.randomUUID());
+                        Resource newLineres = ResourceFactory.createResource(cim17NS + "_" + uuidLine);
+                        convEQModel.add(ResourceFactory.createStatement(newLineres, RDF.type, ResourceFactory.createProperty(cim17NS, "Line")));
+                        convEQModel.add(ResourceFactory.createStatement(newLineres, ResourceFactory.createProperty(cim17NS, "IdentifiedObject.name"), ResourceFactory.createPlainLiteral("new line")));
+                        convEQModel.add(ResourceFactory.createStatement(newLineres, mrid, ResourceFactory.createPlainLiteral(uuidLine)));
+
+                        convEQModel.add(ResourceFactory.createStatement(rebaseResource(stmtC.getSubject(), cim17NS), ResourceFactory.createProperty(cim17NS, "Equipment.EquipmentContainer"), ResourceFactory.createProperty(newLineres.toString())));
+
+                    }
                 }
             }
         }
@@ -1230,97 +1375,111 @@ public static Map<String,String> nameMap;
                     newBoderModel.add(ResourceFactory.createStatement(newBPres, ResourceFactory.createProperty(euNS,"BoundaryPoint.ConnectivityNode"), ResourceFactory.createProperty(stmt.getSubject().toString())));
                 }
 
-                int addmrid=1;
+                if (!stmt.getObject().asResource().getLocalName().equals("Junction") && !stmt.getObject().asResource().getLocalName().equals("Terminal")) {// this is to filter Junction and Terminal. TODO create option in GUT to make this more flexible
+                    //Add Terminal.ConnectivityNode
+                    if (stmt.getObject().asResource().getLocalName().equals("Junction")) {
+                        Statement EqCont = instanceModelBD.listStatements(new SimpleSelector(stmt.getSubject(), ResourceFactory.createProperty(cim16NS, "Equipment.EquipmentContainer"), (RDFNode) null)).next();
+                        Statement conNode = instanceModelBD.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "ConnectivityNode.ConnectivityNodeContainer"), EqCont.getObject())).next();
+                        Statement terminalJunction = instanceModelBD.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "Terminal.ConductingEquipment"), stmt.getSubject())).next();
+                        if (!instanceModelBD.listStatements(new SimpleSelector(terminalJunction.getSubject(), ResourceFactory.createProperty(cim16NS, "Terminal.ConnectivityNode"), conNode.getSubject())).hasNext()) {
+                            newBoderModel.add(terminalJunction.getSubject(), ResourceFactory.createProperty(cim17NS, "Terminal.ConnectivityNode"), conNode.getSubject());
+                        }
+                        if (!instanceModelBD.listStatements(new SimpleSelector(terminalJunction.getSubject(), ResourceFactory.createProperty(cim16NS, "ACDCTerminal.sequenceNumber"), (RDFNode) null)).hasNext()) {
+                            newBoderModel.add(terminalJunction.getSubject(), ResourceFactory.createProperty(cim17NS, "ACDCTerminal.sequenceNumber"), ResourceFactory.createPlainLiteral("1"));
+                        }
+                    }
+                    int addmrid = 1;
 
-                for (StmtIterator a = instanceModelBD.listStatements(new SimpleSelector(stmt.getSubject(), null, (RDFNode) null)); a.hasNext(); ) { // loop on all attributes
-                    Statement stmtA = a.next();
-                    if (!skipList.contains(stmtA.getPredicate().getLocalName())) {
-                        if (stmtA.getSubject().getNameSpace().equals("http://iec.ch/TC57/2013/CIM-schema-cim16#")) {
-                            newSub = rebaseResource(stmtA.getSubject(), cim17NS);
-                        } else if (stmtA.getSubject().getNameSpace().equals("http://entsoe.eu/CIM/SchemaExtension/3/1#")) {
-                            newSub = rebaseResource(stmtA.getSubject(), euNS);
-                        } else {
-                            newSub = stmtA.getSubject();
-                        }
-                        if (stmtA.getPredicate().getNameSpace().equals("http://iec.ch/TC57/2013/CIM-schema-cim16#")) {
-                            newPre = rebaseProperty(stmtA.getPredicate(), cim17NS);
-                        } else if (stmtA.getPredicate().getNameSpace().equals("http://entsoe.eu/CIM/SchemaExtension/3/1#")) {
-                            newPre = rebaseProperty(stmtA.getPredicate(), euNS);
-                        } else {
-                            newPre = stmtA.getPredicate();
-                        }
-                        if (stmtA.getObject().isResource()) {
-                            if (stmtA.getObject().asResource().getNameSpace().equals("http://iec.ch/TC57/2013/CIM-schema-cim16#")) {
-                                newObj = rebaseRDFNode(stmtA.getObject(), cim17NS);
-                            } else if (stmtA.getObject().asResource().getNameSpace().equals("http://entsoe.eu/CIM/SchemaExtension/3/1#")) {
-                                newObj = rebaseRDFNode(stmtA.getObject(), euNS);
+                    for (StmtIterator a = instanceModelBD.listStatements(new SimpleSelector(stmt.getSubject(), null, (RDFNode) null)); a.hasNext(); ) { // loop on all attributes
+                        Statement stmtA = a.next();
+                        if (!skipList.contains(stmtA.getPredicate().getLocalName())) {
+                            if (stmtA.getSubject().getNameSpace().equals("http://iec.ch/TC57/2013/CIM-schema-cim16#")) {
+                                newSub = rebaseResource(stmtA.getSubject(), cim17NS);
+                            } else if (stmtA.getSubject().getNameSpace().equals("http://entsoe.eu/CIM/SchemaExtension/3/1#")) {
+                                newSub = rebaseResource(stmtA.getSubject(), euNS);
+                            } else {
+                                newSub = stmtA.getSubject();
+                            }
+                            if (stmtA.getPredicate().getNameSpace().equals("http://iec.ch/TC57/2013/CIM-schema-cim16#")) {
+                                newPre = rebaseProperty(stmtA.getPredicate(), cim17NS);
+                            } else if (stmtA.getPredicate().getNameSpace().equals("http://entsoe.eu/CIM/SchemaExtension/3/1#")) {
+                                newPre = rebaseProperty(stmtA.getPredicate(), euNS);
+                            } else {
+                                newPre = stmtA.getPredicate();
+                            }
+                            if (stmtA.getObject().isResource()) {
+                                if (stmtA.getObject().asResource().getNameSpace().equals("http://iec.ch/TC57/2013/CIM-schema-cim16#")) {
+                                    newObj = rebaseRDFNode(stmtA.getObject(), cim17NS);
+                                } else if (stmtA.getObject().asResource().getNameSpace().equals("http://entsoe.eu/CIM/SchemaExtension/3/1#")) {
+                                    newObj = rebaseRDFNode(stmtA.getObject(), euNS);
+                                } else {
+                                    newObj = stmtA.getObject();
+                                }
                             } else {
                                 newObj = stmtA.getObject();
                             }
-                        } else {
-                            newObj = stmtA.getObject();
-                        }
-                        if (stmt.getObject().asResource().getLocalName().equals("ConnectivityNode")) {
-                            String stmtAPredicate=stmtA.getPredicate().getLocalName();
-                            switch (stmtAPredicate) {
-                                case "ConnectivityNode.toEndName":
-                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.toEndName");
-                                    newSub=newBPres;
-                                    break;
-                                case "ConnectivityNode.fromEndName":
-                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.fromEndName");
-                                    newSub=newBPres;
-                                    break;
-                                case "ConnectivityNode.toEndNameTso":
-                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.toEndNameTso");
-                                    newSub=newBPres;
-                                    break;
-                                case "ConnectivityNode.toEndIsoCode":
-                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.toEndIsoCode");
-                                    newSub=newBPres;
-                                    break;
-                                case "ConnectivityNode.fromEndIsoCode":
-                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.fromEndIsoCode");
-                                    newSub=newBPres;
-                                    break;
-                                case "ConnectivityNode.fromEndNameTso":
-                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.fromEndNameTso");
-                                    newSub=newBPres;
-                                    break;
-                                case "IdentifiedObject.name":
-                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "IdentifiedObject.name");
-                                    newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
-                                    newSub=newBPres;
-                                    break;
-                                case "IdentifiedObject.description":
-                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "IdentifiedObject.description");
-                                    newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
-                                    newSub=newBPres;
-                                    Resource lineSub = instanceModelBD.getRequiredProperty(stmtA.getSubject(),ResourceFactory.createProperty(cim16NS,"ConnectivityNode.ConnectivityNodeContainer")).getObject().asResource();
-                                    String lineDesc = instanceModelBD.getRequiredProperty(lineSub,ResourceFactory.createProperty(cim16NS,"IdentifiedObject.description")).getObject().toString();
-                                    if (lineDesc.contains("HVDC")){
-                                        newBoderModel.add(ResourceFactory.createStatement(newSub, ResourceFactory.createProperty(euNS,"BoundaryPoint.isDirectCurrent"), ResourceFactory.createPlainLiteral("true")));
-                                    }
-                                    break;
-                                case "IdentifiedObject.shortName":
-                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "IdentifiedObject.shortName");
-                                    newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
-                                    newSub=newBPres;
-                                    break;
-                                case "IdentifiedObject.energyIdentCodeEic":
-                                    newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "IdentifiedObject.energyIdentCodeEic");
-                                    newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
-                                    newSub=newBPres;
-                                    break;
+                            if (stmt.getObject().asResource().getLocalName().equals("ConnectivityNode")) {
+                                String stmtAPredicate = stmtA.getPredicate().getLocalName();
+                                switch (stmtAPredicate) {
+                                    case "ConnectivityNode.toEndName":
+                                        newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.toEndName");
+                                        newSub = newBPres;
+                                        break;
+                                    case "ConnectivityNode.fromEndName":
+                                        newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.fromEndName");
+                                        newSub = newBPres;
+                                        break;
+                                    case "ConnectivityNode.toEndNameTso":
+                                        newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.toEndNameTso");
+                                        newSub = newBPres;
+                                        break;
+                                    case "ConnectivityNode.toEndIsoCode":
+                                        newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.toEndIsoCode");
+                                        newSub = newBPres;
+                                        break;
+                                    case "ConnectivityNode.fromEndIsoCode":
+                                        newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.fromEndIsoCode");
+                                        newSub = newBPres;
+                                        break;
+                                    case "ConnectivityNode.fromEndNameTso":
+                                        newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "BoundaryPoint.fromEndNameTso");
+                                        newSub = newBPres;
+                                        break;
+                                    case "IdentifiedObject.name":
+                                        newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "IdentifiedObject.name");
+                                        newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                                        newSub = newBPres;
+                                        break;
+                                    case "IdentifiedObject.description":
+                                        newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "IdentifiedObject.description");
+                                        newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                                        newSub = newBPres;
+                                        Resource lineSub = instanceModelBD.getRequiredProperty(stmtA.getSubject(), ResourceFactory.createProperty(cim16NS, "ConnectivityNode.ConnectivityNodeContainer")).getObject().asResource();
+                                        String lineDesc = instanceModelBD.getRequiredProperty(lineSub, ResourceFactory.createProperty(cim16NS, "IdentifiedObject.description")).getObject().toString();
+                                        if (lineDesc.contains("HVDC")) {
+                                            newBoderModel.add(ResourceFactory.createStatement(newSub, ResourceFactory.createProperty(euNS, "BoundaryPoint.isDirectCurrent"), ResourceFactory.createPlainLiteral("true")));
+                                        }
+                                        break;
+                                    case "IdentifiedObject.shortName":
+                                        newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "IdentifiedObject.shortName");
+                                        newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                                        newSub = newBPres;
+                                        break;
+                                    case "IdentifiedObject.energyIdentCodeEic":
+                                        newPre = ResourceFactory.createProperty(newPre.getNameSpace(), "IdentifiedObject.energyIdentCodeEic");
+                                        newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                                        newSub = newBPres;
+                                        break;
+                                }
                             }
+
+
+                            newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
                         }
-
-
-                        newBoderModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
-                    }
-                    if (getMRID.contains(stmt.getObject().asResource().getLocalName()) && addmrid==1){
-                        newBoderModel.add(ResourceFactory.createStatement(stmt.getSubject(), mrid, ResourceFactory.createPlainLiteral(stmt.getSubject().getLocalName().substring(1))));
-                        addmrid=0;
+                        if (getMRID.contains(stmt.getObject().asResource().getLocalName()) && addmrid == 1) {
+                            newBoderModel.add(ResourceFactory.createStatement(stmt.getSubject(), mrid, ResourceFactory.createPlainLiteral(stmt.getSubject().getLocalName().substring(1))));
+                            addmrid = 0;
+                        }
                     }
                 }
 
