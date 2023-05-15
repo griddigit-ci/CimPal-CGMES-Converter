@@ -602,6 +602,7 @@ public static Map<String,String> nameMap;
                     }
                     Resource cnRes = modelTPBD.listStatements(new SimpleSelector(null,ResourceFactory.createProperty(cim16NS,"ConnectivityNode.TopologicalNode"),tnProp)).next().getSubject();
                     convTPModel.add(ResourceFactory.createResource(cim17NS+cnRes.getLocalName()), RDF.type, ResourceFactory.createProperty(cim17NS, "ConnectivityNode"));
+                    convEQModel.add(stmtC.getSubject(),ResourceFactory.createProperty(cim17NS,"Terminal.ConnectivityNode"),ResourceFactory.createProperty(cim17NS,cnRes.getLocalName()));
                     assert stmtArebase != null;
                     convTPModel.add(ResourceFactory.createResource(cim17NS+cnRes.getLocalName()), ResourceFactory.createProperty(cim17NS,"ConnectivityNode.TopologicalNode"), stmtArebase.getSubject());
                 }
@@ -613,6 +614,7 @@ public static Map<String,String> nameMap;
         if (modelEQ.listStatements(null,RDF.type,ResourceFactory.createProperty(cim16NS,"ConnectivityNode")).hasNext()){
             hasCN=1;
         }
+        // convert TN of TP
         for (StmtIterator c = modelTP.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); c.hasNext(); ) { // loop on all classes
             Statement stmtC = c.next();
             String className = stmtC.getObject().asResource().getLocalName();
@@ -621,10 +623,11 @@ public static Map<String,String> nameMap;
                 int hasMRid = 0;
                 Resource newCNres = null;
 
-                if (hasCN == 0) { // need to create CN and add it to EQ and link here in TP
+                if (hasCN == 0 && className.equals("TopologicalNode")) { // need to create CN and add it to EQ and link here in TP
                     String uuidCN = String.valueOf(UUID.randomUUID());
-                    newCNres = ResourceFactory.createResource(euNS + "_" + uuidCN);
+                    newCNres = ResourceFactory.createResource(cim17NS + "_" + uuidCN);
                     convEQModel.add(ResourceFactory.createStatement(newCNres, RDF.type, ResourceFactory.createProperty(cim17NS, "ConnectivityNode")));
+                    convEQModel.add(ResourceFactory.createStatement(newCNres, mrid, ResourceFactory.createPlainLiteral(uuidCN)));
                     convTPModel.add(ResourceFactory.createStatement(newCNres, RDF.type, ResourceFactory.createProperty(cim17NS, "ConnectivityNode")));
                     convTPModel.add(ResourceFactory.createStatement(newCNres, ResourceFactory.createProperty(cim17NS, "ConnectivityNode.TopologicalNode"), ResourceFactory.createProperty(stmtC.getSubject().toString())));
                 }
@@ -642,9 +645,20 @@ public static Map<String,String> nameMap;
                     if (newPre.getLocalName().equals("IdentifiedObject.mRID")) {
                         hasMRid = 1;
                     }
-                    if (newPre.getLocalName().equals("IdentifiedObject.name") && hasCN == 0) {
-                        convEQModel.add(ResourceFactory.createStatement(newCNres, newPre, ResourceFactory.createProperty(newSub.toString())));
+                    if (hasCN == 0 && className.equals("TopologicalNode")) {
+                        if (newPre.getLocalName().equals("IdentifiedObject.name")) {
+                            convEQModel.add(ResourceFactory.createStatement(newCNres, newPre, newObj));
+                        }
+                        if (newPre.getLocalName().equals("TopologicalNode.ConnectivityNodeContainer")) {
+                            convEQModel.add(ResourceFactory.createStatement(newCNres, ResourceFactory.createProperty(cim17NS, "ConnectivityNode.ConnectivityNodeContainer"), newObj));
+                        }
+
+                        for (StmtIterator t = modelTP.listStatements(new SimpleSelector(null,ResourceFactory.createProperty(cim16NS, "Terminal.TopologicalNode"),stmtC.getSubject())); t.hasNext(); ) { // loop on all classes
+                            Statement stmtT = t.next();
+                            convEQModel.add(ResourceFactory.createStatement(stmtT.getSubject(),ResourceFactory.createProperty(cim17NS, "Terminal.ConnectivityNode"),ResourceFactory.createProperty(newCNres.toString())));
+                        }
                     }
+
                 }
                 //add mrid if not there
                 if (hasMRid == 0 && getMRIDTP.contains(stmtC.getObject().asResource().getLocalName())) {
@@ -759,6 +773,17 @@ public static Map<String,String> nameMap;
                             newObj = ResourceFactory.createProperty(euNS, "LimitKind" + kindType);
                         }
                     }
+                    //fix operational limit set
+                    if (className.equals("OperationalLimitSet")) {
+                        if (newPre.getLocalName().equals("OperationalLimitSet.Equipment")){
+                            if (!modelEQ.listStatements(new SimpleSelector(stmtA.getSubject(),ResourceFactory.createProperty(cim16NS,"OperationalLimitSet.Terminal"),(RDFNode) null)).hasNext()){
+                                Resource termRes = modelEQ.listStatements(new SimpleSelector(null,ResourceFactory.createProperty(cim16NS,"Terminal.ConductingEquipment"),stmtA.getObject())).next().getSubject();
+                                convEQModel.add(newSub,ResourceFactory.createProperty(cim17NS,"OperationalLimitSet.Terminal"),ResourceFactory.createProperty(cim17NS,termRes.getLocalName()));
+                            }
+
+                        }
+
+                    }
 
                     if (newPre.getLocalName().equals("Equipment.aggregate")){
                         if (!className.equals("EquivalentBranch") && !className.equals("EquivalentShunt") && !className.equals("EquivalentInjection")) {
@@ -851,8 +876,27 @@ public static Map<String,String> nameMap;
                         if (terminals.size()==1){
                             convEQModel.add(rebaseResource(stmtC.getSubject(), cim17NS),ResourceFactory.createProperty(cim17NS,"ACDCTerminal.sequenceNumber"),ResourceFactory.createPlainLiteral("1"));
 
-                        }else{ //TODO if more than 1 terminal
-
+                        }else{
+                            Statement condEQnameStmt = modelEQ.getRequiredProperty(condEQ.getObject().asResource(),RDF.type);
+                            String condEQname = condEQnameStmt.getObject().asResource().getLocalName();
+                            if (condEQname.equals("PowerTransformer")){
+                                for (StmtIterator pt = modelEQ.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS,"PowerTransformerEnd.PowerTransformer"), condEQ.getObject())); pt.hasNext(); ) { // loop on all classes
+                                    Statement stmtPT = pt.next();
+                                    RDFNode endTerminal = modelEQ.getRequiredProperty(stmtPT.getSubject(),ResourceFactory.createProperty(cim16NS,"TransformerEnd.Terminal")).getObject();
+                                    if (endTerminal.asResource().getLocalName().equals(stmtC.getSubject().getLocalName())) {
+                                        String endnumber = modelEQ.getRequiredProperty(stmtPT.getSubject(), ResourceFactory.createProperty(cim16NS, "TransformerEnd.endNumber")).getObject().toString();
+                                        convEQModel.add(rebaseResource(stmtC.getSubject(), cim17NS), ResourceFactory.createProperty(cim17NS, "ACDCTerminal.sequenceNumber"), ResourceFactory.createPlainLiteral(endnumber));
+                                    }
+                                }
+                            }else{
+                                int count =1;
+                                for (Statement st : terminals) {
+                                    if (!convEQModel.listStatements(new SimpleSelector(st.getSubject(),ResourceFactory.createProperty(cim17NS, "ACDCTerminal.sequenceNumber"),(RDFNode) null)).hasNext()) {
+                                        convEQModel.add(rebaseResource(stmtC.getSubject(), cim17NS), ResourceFactory.createProperty(cim17NS, "ACDCTerminal.sequenceNumber"), ResourceFactory.createPlainLiteral(Integer.toString(count)));
+                                    }
+                                    count = count+1;
+                                }
+                            }
                         }
                     }
                 }
