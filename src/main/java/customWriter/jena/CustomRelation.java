@@ -10,7 +10,6 @@ import java.util.*;
  *
  * Has to be copied, because the original class is package private and {@link customWriter.CustomBaseXMLWriter} needs it.
  *
- * @author mz
  */
 public class CustomRelation<T> {
     final private Map<T, Set<T>> rows;

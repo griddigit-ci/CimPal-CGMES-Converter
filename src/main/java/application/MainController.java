@@ -8,24 +8,20 @@ package application;
 import core.InstanceDataFactory;
 import core.ModelManipulationFactory;
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.text.Font;
-import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.riot.Lang;
 
-import javax.swing.*;
 import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -34,7 +30,7 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 import static core.ModelManipulationFactory.ConvertCGMESv2v3;
-
+import static core.ModelManipulationFactory.LoadRDFS;
 
 
 public class MainController implements Initializable {
@@ -45,6 +41,21 @@ public class MainController implements Initializable {
     public Tab tabOutputWindow;
     public Font x3;
     public TabPane tabPaneConstraintsDetails;
+    public Button btnResetSwitchingdevices;
+    public Button btnModify;
+    public CheckBox fcbexportMapfile;
+    public CheckBox fcbSM;
+    public CheckBox fCBrafo;
+    public CheckBox fCBlines;
+    public CheckBox fcbAllCondEQ;
+    public Button fBrowseMapFile;
+    public TextField fPathMapFile;
+    public CheckBox fCBmapFile;
+    public Button fBrowseIGMCGM;
+    public TextField fPathIGMCGM;
+    public ChoiceBox fCBCGMESstd;
+    public CheckBox fCBmodCGM;
+    public CheckBox fCBmodIGM;
     @FXML
     private TextField fPathIGM;
 
@@ -62,6 +73,8 @@ public class MainController implements Initializable {
     private ProgressBar progressBar;
 
     public static List<File> IDModel;
+
+    public static List<File> MappingMapFile;
 
     @FXML
     private TabPane tabPaneDown;
@@ -82,6 +95,8 @@ public class MainController implements Initializable {
 
     @FXML
     private Button fBrowse;
+    @FXML
+    private  CheckBox fcbEQonly;
 
 
 
@@ -122,6 +137,13 @@ public class MainController implements Initializable {
         }
 
         loadDataMap= new HashMap<>();
+
+        fCBCGMESstd.getItems().addAll(
+                "CGMES v2.4 (IEC TS 61970-600-1,-2:2017)",
+                "CGMES v3.0 (IEC 61970-600-1,-2:2021)"
+
+        );
+        fCBCGMESstd.getSelectionModel().selectFirst();
 
     }
 
@@ -188,6 +210,8 @@ public class MainController implements Initializable {
             fBrowse.setDisable(false);
             fcbKeepExt.setDisable(false);
             fcbKeepExt.setSelected(false);
+            fcbEQonly.setDisable(false);
+            fcbEQonly.setSelected(false);
             fCBconvBD.setDisable(true);
 
         }else{
@@ -195,6 +219,8 @@ public class MainController implements Initializable {
             fcbKeepExt.setDisable(true);
             fCBconvBD.setDisable(false);
             fcbKeepExt.setSelected(false);
+            fcbEQonly.setDisable(true);
+            fcbEQonly.setSelected(false);
         }
 
     }
@@ -309,69 +335,27 @@ public class MainController implements Initializable {
     //action button Convert
     private void actionBtnConvert() throws IOException, URISyntaxException {
 
-        if (loadDataMap.size()==0) {
+
+        //datatype test
+
+//        Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+//        model.setNsPrefix("cim","http://iec.ch/TC57/CIM100#");
+//        Statement testStmt = ResourceFactory.createStatement(ResourceFactory.createResource("http://iec.ch/TC57/CIM100#123"),ResourceFactory.createProperty("http://iec.ch/TC57/CIM100#","testDatatype"),ResourceFactory.createLangLiteral("test datatype","en"));
+//        model.add(testStmt);
+//        int endTest=1;
+//        RDFLangString.rdfLangString
+//        http://www.w3.org/1999/02/22-rdf-syntax-ns#langString
+
+
+
+
+        if (loadDataMap.isEmpty()) {
             // load all profile models
-            Lang rdfProfileFormat = null;
-            Map<String, Model> profileModelMap = null;
+
+            List<File> modelFiles = LoadRDFS("CGMESv3.0");
+            Map<String, Model> profileModelMap;
             String xmlBase = "http://iec.ch/TC57/CIM100";
-            List<File> modelFiles = new LinkedList<>();
-            File EQ;
-            File FH;
-            File SC;
-            File OP;
-            File SSH;
-            File TP;
-            File SV;
-            File EQBD;
-
-            String pathclass = getClass().getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
-            File jarFile = new File(pathclass);
-            String jarDir = jarFile.getParentFile().getAbsolutePath();
-
-            EQ = new File(jarDir + "/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_EQ.rdf");
-            FH = new File(jarDir + "/RDFSCGMESv3/FileHeader_RDFS2019.rdf");
-            EQBD = new File(jarDir + "/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_EQBD.rdf");
-            OP = new File(jarDir + "/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_OP.rdf");
-            SC = new File(jarDir + "/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SC.rdf");
-            SSH = new File(jarDir + "/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SSH.rdf");
-            SV = new File(jarDir + "/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SV.rdf");
-            TP = new File(jarDir + "/RDFSCGMESv3/IEC61970-600-2_CGMES_3_0_0_RDFS2020_TP.rdf");
-
-            if (!EQ.exists() && !FH.exists() && !EQBD.exists() && !OP.exists() && !SC.exists() && !SSH.exists() && !SV.exists() && !TP.exists()){
-                Alert alert = new Alert(Alert.AlertType.WARNING);
-                alert.setContentText("RFS folder does not exist. Please select the folder with Select or cancel conversion.");
-                alert.setHeaderText(null);
-                alert.setTitle("Warning - RDFS folder does not exist");
-                ButtonType btnYes = new ButtonType("Select RDFS folder");
-                ButtonType btnNo = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-                alert.getButtonTypes().setAll(btnYes, btnNo);
-                Optional<ButtonType> result = alert.showAndWait();
-                if (result.get() == btnNo) {
-                    return;
-                }else if (result.get() == btnYes){
-                    DirectoryChooser directoryChooser = new DirectoryChooser();
-                    directoryChooser.setInitialDirectory(new File(MainController.prefs.get("LastWorkingFolder","")));
-                    File folder = directoryChooser.showDialog(null);
-                    String rdfsdir = folder.getAbsolutePath();
-                    EQ = new File(rdfsdir + "/IEC61970-600-2_CGMES_3_0_0_RDFS2020_EQ.rdf");
-                    FH = new File(rdfsdir + "/FileHeader_RDFS2019.rdf");
-                    EQBD = new File(rdfsdir + "/IEC61970-600-2_CGMES_3_0_0_RDFS2020_EQBD.rdf");
-                    OP = new File(rdfsdir + "/IEC61970-600-2_CGMES_3_0_0_RDFS2020_OP.rdf");
-                    SC = new File(rdfsdir + "/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SC.rdf");
-                    SSH = new File(rdfsdir + "/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SSH.rdf");
-                    SV = new File(rdfsdir + "/IEC61970-600-2_CGMES_3_0_0_RDFS2020_SV.rdf");
-                    TP = new File(rdfsdir + "/IEC61970-600-2_CGMES_3_0_0_RDFS2020_TP.rdf");
-                }
-            }
-
-            modelFiles.add(EQ);
-            modelFiles.add(FH);
-            modelFiles.add(EQBD);
-            modelFiles.add(OP);
-            modelFiles.add(SC);
-            modelFiles.add(SSH);
-            modelFiles.add(SV);
-            modelFiles.add(TP);
+            Lang rdfProfileFormat = null;
 
             try {
                 profileModelMap = InstanceDataFactory.modelLoad(modelFiles, xmlBase, rdfProfileFormat);
@@ -389,11 +373,19 @@ public class MainController implements Initializable {
 
         if (fCBconvIGM.isSelected()){
             ibBDconversion=false;
+            int keepE;
+            int eqo;
             if (fcbKeepExt.isSelected()){
-                ConvertCGMESv2v3(loadDataMap,1);
+                keepE = 1;
             }else{
-                ConvertCGMESv2v3(loadDataMap,0);
+                keepE = 0;
             }
+            if (fcbEQonly.isSelected()){
+                eqo = 1;
+            }else{
+                eqo = 0;
+            }
+            ConvertCGMESv2v3(loadDataMap,keepE,eqo);
         }
 
         if (fCBconvBD.isSelected()){
@@ -414,6 +406,199 @@ public class MainController implements Initializable {
 
     public void appendText(String valueOf) {
         Platform.runLater(() -> foutputWindow.appendText(valueOf));
+    }
+
+    public void actionBtnModify() throws URISyntaxException, IOException {
+
+        String cgmesVersion="";
+        if(fCBCGMESstd.getSelectionModel().getSelectedItem().toString().equals("CGMES v2.4 (IEC TS 61970-600-1,-2:2017")){
+            cgmesVersion = "CGMESv2.4";
+        }else if (fCBCGMESstd.getSelectionModel().getSelectedItem().toString().equals("CGMES v3.0 (IEC 61970-600-1,-2:2021)")){
+            cgmesVersion = "CGMESv3.0";
+        }
+
+        if (loadDataMap.isEmpty()) {
+            // load all profile models
+            List<File> modelFiles = LoadRDFS(cgmesVersion);
+            Map<String, Model> profileModelMap;
+            String xmlBase = "http://iec.ch/TC57/CIM100";
+            Lang rdfProfileFormat = null;
+
+            try {
+                profileModelMap = InstanceDataFactory.modelLoad(modelFiles, xmlBase, rdfProfileFormat);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+            loadDataMap.put("profileModelMap", profileModelMap);
+        }
+
+        progressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
+
+        boolean impMap = fCBmapFile.isSelected();
+        boolean applyAllCondEq = fcbAllCondEQ.isSelected();
+        boolean applyLine = fCBlines.isSelected();
+        boolean applyTrafo = fCBrafo.isSelected();
+        boolean applySynMach = fcbSM.isSelected();
+        boolean expMap = fcbexportMapfile.isSelected();
+
+        if (fCBmodIGM.isSelected()){
+            ModelManipulationFactory.ModifyIGM(loadDataMap,cgmesVersion,impMap,applyAllCondEq,applyLine,applyTrafo,applySynMach,expMap);
+        }else if (fCBmodCGM.isSelected()){
+            ModelManipulationFactory.ModifyCGM(loadDataMap,cgmesVersion,impMap,applyAllCondEq,applyLine,applyTrafo,applySynMach,expMap);
+        }
+
+        System.out.print("Modification finished.\n");
+        progressBar.setProgress(1);
+    }
+
+    public void actionBtnResetModify() {
+        fPathIGMCGM.clear();
+        fPathMapFile.clear();
+        fCBmodIGM.setSelected(false);
+        fCBmodCGM.setSelected(false);
+        fCBmapFile.setSelected(false);
+        fcbAllCondEQ.setSelected(false);
+        fCBlines.setSelected(false);
+        fCBrafo.setSelected(false);
+        fcbSM.setSelected(false);
+        fcbexportMapfile.setSelected(false);
+        progressBar.setProgress(0);
+        fBrowseIGMCGM.setDisable(true);
+        fBrowseMapFile.setDisable(true);
+    }
+
+    public void actionBrowseMapFile() throws URISyntaxException {
+        progressBar.setProgress(0);
+
+        FileChooser filechooser = new FileChooser();
+        filechooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Excel file", "*.xlsx"));
+        List<File> fileL;
+        filechooser.setInitialDirectory(new File(MainController.prefs.get("LastWorkingFolder", "")));
+        filechooser.setTitle("Select mapping file");
+        try {
+            fileL = filechooser.showOpenMultipleDialog(null);
+        }catch (Exception e){
+            filechooser.setInitialDirectory(new File(getClass().getProtectionDomain().getCodeSource().getLocation().toURI().getPath()));
+            fileL = filechooser.showOpenMultipleDialog(null);
+        }
+
+        if (fileL != null) {// the file is selected
+
+            MainController.prefs.put("LastWorkingFolder", fileL.get(0).getParent());
+            fPathMapFile.setText(fileL.toString());
+            MainController.MappingMapFile=fileL;
+        } else{
+            fPathMapFile.clear();
+        }
+    }
+
+    public void actionBrowseIGMCGM() throws URISyntaxException {
+        progressBar.setProgress(0);
+
+        String title = "";
+        if (fCBmodIGM.isSelected()){
+            title = "Select an IGM (either EQ, SSH or EQ, SSH, TP, SV and boundary set)";
+        }else if (fCBmodCGM.isSelected()){
+            title = "Select an CGM including boundary set";;
+        }
+
+        FileChooser filechooser = new FileChooser();
+        filechooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Instance files", "*.xml","*.zip"));
+        List<File> fileL;
+        filechooser.setInitialDirectory(new File(MainController.prefs.get("LastWorkingFolder", "")));
+        filechooser.setTitle(title);
+        try {
+            fileL = filechooser.showOpenMultipleDialog(null);
+        }catch (Exception e){
+            filechooser.setInitialDirectory(new File(getClass().getProtectionDomain().getCodeSource().getLocation().toURI().getPath()));
+            fileL = filechooser.showOpenMultipleDialog(null);
+        }
+
+        if (fileL != null) {// the file is selected
+
+            MainController.prefs.put("LastWorkingFolder", fileL.get(0).getParent());
+            fPathIGMCGM.setText(fileL.toString());
+            MainController.IDModel=fileL;
+        } else{
+            fPathIGMCGM.clear();
+        }
+    }
+
+    public void actionCBmodIGM() {
+        if (fCBmodIGM.isSelected()){
+            fCBmodCGM.setSelected(false);
+            fBrowseIGMCGM.setDisable(false);
+        }else{
+            fCBmodCGM.setSelected(false);
+            fBrowseIGMCGM.setDisable(true);
+        }
+    }
+
+    public void actionCBmodCGM() {
+        if (fCBmodCGM.isSelected()){
+            fCBmodIGM.setSelected(false);
+            fBrowseIGMCGM.setDisable(false);
+        }else{
+            fCBmodIGM.setSelected(false);
+            fBrowseIGMCGM.setDisable(true);
+        }
+    }
+
+    public void actionImpMapping() {
+        if (fCBmapFile.isSelected()){
+            fBrowseMapFile.setDisable(false);
+        }else{
+            fBrowseMapFile.setDisable(true);
+            fPathMapFile.clear();
+        }
+    }
+
+    public void actionCBallCondEq() {
+        if (fcbAllCondEQ.isSelected()){
+            fCBlines.setDisable(true);
+            fCBrafo.setDisable(true);
+            fcbSM.setDisable(true);
+        }else{
+            fCBlines.setDisable(false);
+            fCBrafo.setDisable(false);
+            fcbSM.setDisable(false);
+        }
+        fCBlines.setSelected(false);
+        fCBrafo.setSelected(false);
+        fcbSM.setSelected(false);
+    }
+
+    public void actionCBapplyLines() {
+        if (fCBlines.isSelected()) {
+            fcbAllCondEQ.setDisable(true);
+            fcbAllCondEQ.setSelected(false);
+        }else{
+            if (!fCBrafo.isSelected() && !fcbSM.isSelected()){
+                fcbAllCondEQ.setDisable(false);
+            }
+        }
+    }
+
+    public void actionCBapplyPT() {
+        if (fCBrafo.isSelected()) {
+            fcbAllCondEQ.setDisable(true);
+            fcbAllCondEQ.setSelected(false);
+        }else{
+            if (!fCBlines.isSelected() && !fcbSM.isSelected()){
+                fcbAllCondEQ.setDisable(false);
+            }
+        }
+    }
+
+    public void actionCBApplySM() {
+        if (fcbSM.isSelected()) {
+            fcbAllCondEQ.setDisable(true);
+            fcbAllCondEQ.setSelected(false);
+        }else{
+            if (!fCBlines.isSelected() && !fCBrafo.isSelected()){
+                fcbAllCondEQ.setDisable(false);
+            }
+        }
     }
 }
 

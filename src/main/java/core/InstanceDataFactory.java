@@ -262,6 +262,8 @@ public class InstanceDataFactory {
         String fileFolder=saveProperties.get("fileFolder").toString();
         boolean dozip=(boolean) saveProperties.get("dozip");
         String showXmlBaseDeclaration = saveProperties.get("showXmlBaseDeclaration").toString();
+        String sortRDF = saveProperties.get("sortRDF").toString();
+        String sortRDFprefix = saveProperties.get("sortRDFprefix").toString();
 
         if (!dozip) {
             if (filename.endsWith(".ZIP")){
@@ -308,6 +310,8 @@ public class InstanceDataFactory {
                     properties.put("relativeURIs", relativeURIs);
                     properties.put("instanceData", instanceData);
                     properties.put("showXmlBaseDeclaration", showXmlBaseDeclaration);
+                    properties.put("sortRDF", sortRDF);
+                    properties.put("sortRDFprefix", sortRDFprefix);
 
                     if (useAboutRules) {
                         properties.put("aboutRules", rdfAboutList);

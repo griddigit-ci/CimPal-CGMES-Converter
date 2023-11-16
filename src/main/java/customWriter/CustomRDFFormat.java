@@ -1,3 +1,10 @@
+
+/*
+ * Licensed under the EUPL-1.2-or-later.
+ * Copyright (c) 2023, gridDigIt Kft. All rights reserved.
+ * @author Chavdar Ivanov
+ */
+
 package customWriter;
 
 import org.apache.jena.riot.Lang;
@@ -8,7 +15,6 @@ import org.apache.jena.riot.RDFWriterRegistry;
 /**
  * extends {@link RDFFormat} by new custom formats
  *
- * @author mz
  */
 public class CustomRDFFormat extends RDFFormat {
     public static final RDFFormatVariant CUSTOM_PLAIN_PRETTY         = new RDFFormatVariant("custom_plain_pretty") ;

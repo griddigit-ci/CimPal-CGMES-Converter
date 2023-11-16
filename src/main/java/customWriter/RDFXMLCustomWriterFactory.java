@@ -1,3 +1,9 @@
+
+/*
+ * Licensed under the EUPL-1.2-or-later.
+ * Copyright (c) 2023, gridDigIt Kft. All rights reserved.
+ * @author Chavdar Ivanov
+ */
 package customWriter;
 
 import org.apache.jena.riot.RDFFormat;
@@ -7,7 +13,6 @@ import org.apache.jena.riot.WriterGraphRIOTFactory;
 /**
  * factory to create a custom RDF-XML writer for specific custom {@link CustomRDFFormat formats}
  *
- * @author mz
  */
 public class RDFXMLCustomWriterFactory implements WriterGraphRIOTFactory {
     @Override

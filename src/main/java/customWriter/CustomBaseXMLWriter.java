@@ -1,3 +1,9 @@
+
+/*
+ * Licensed under the EUPL-1.2-or-later.
+ * Copyright (c) 2023, gridDigIt Kft. All rights reserved.
+ * @author Chavdar Ivanov
+ */
 package customWriter;
 
 import customWriter.jena.CustomRelation;
@@ -30,7 +36,6 @@ import java.util.regex.Pattern;
 /**
  * This is a copy of {@link BaseXMLWriter} with custom adjustments.
  *
- * @author mz
  */
 public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
     private static final String newline =
@@ -121,7 +126,10 @@ public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
     RDFErrorHandler errorHandler = defaultErrorHandler;
 
     Boolean showXmlDeclaration = null;
+    String sortRDF = null;
+    String sortRDFprefix = null;
     Boolean showXmlEncoding = null;
+    String showXmlBaseDeclaration = null;
 
     String instanceData = null;
 
@@ -318,7 +326,7 @@ public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
             String prefix = ent.getValue();
             String uri = ent.getKey();
             result.append( newline ).append( "    xmlns" );
-            if (prefix.length() > 0) result.append( ':' ).append( prefix );
+            if (!prefix.isEmpty()) result.append( ':' ).append( prefix );
             result.append( '=' ).append( substitutedAttribute( checkURI( uri ) ) );
         }
         return result.toString();
@@ -468,10 +476,10 @@ public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
 //		try {
         // errors?
         if (xmlBase == null) {
-            baseURI = (base == null || base.length() == 0) ? null : factory.create(base);
+            baseURI = (base == null || base.isEmpty()) ? null : factory.create(base);
             writeBody(model, pw, base, false);
         } else {
-            baseURI = xmlBase.length() == 0 ? null : factory.create(xmlBase);
+            baseURI = xmlBase.isEmpty() ? null : factory.create(xmlBase);
             writeBody(model, pw, xmlBase, true);
         }
 //		} catch (MalformedURIException e) {
@@ -649,6 +657,20 @@ public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
             return setBlockRules(propValue);
         } else if(propName.equalsIgnoreCase("showXmlEncoding")) {
             return setShowXmlEncoding(propValue);
+        } else if(propName.equalsIgnoreCase("sortRDF")) {
+            //return setsortRDF(propValue);
+            String result = sortRDF;
+            sortRDF = (String) propValue;
+            return result;
+        } else if(propName.equalsIgnoreCase("showXmlBaseDeclaration")) {
+            String result = showXmlBaseDeclaration;
+            showXmlBaseDeclaration = (String) propValue;
+            return result;
+        } else if(propName.equalsIgnoreCase("sortRDFprefix")) {
+            //return setsortRDF(propValue);
+            String result = sortRDFprefix;
+            sortRDFprefix = (String) propValue;
+            return result;
         } else if(propName.equalsIgnoreCase("instanceData")) {
             //return setinstanceData(propValue);
             String result = instanceData;
@@ -731,6 +753,12 @@ public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
         return oldValue;
     }
 
+//    private String setsortRDF(Object propValue)
+//    {
+//        String oldValue = sortRDF == null ? null : sortRDF.toString();
+//        sortRDF = getBooleanValue(propValue, null);
+//        return oldValue;
+//    }
     /**
      Answer the boolean value corresponding to o, which must either be a Boolean,
      or a String parsable as a Boolean.

@@ -25,7 +25,6 @@ import java.util.Map;
  * The Stream should be used with the RDFDataMgr.
  */
 
-//TODO - forMalte - this is needed for the datatypes mapping
 public class DataTypeStreamRDF implements StreamRDF {
     private final Map<Node, Graph> sink = new HashMap<>();
     private final Graph graph;

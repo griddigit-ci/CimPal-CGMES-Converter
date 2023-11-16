@@ -6,26 +6,10 @@
  @author Chavdar Ivanov
  -->
 
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.CheckBox?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.Menu?>
-<?import javafx.scene.control.MenuBar?>
-<?import javafx.scene.control.MenuItem?>
-<?import javafx.scene.control.ProgressBar?>
-<?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.SeparatorMenuItem?>
-<?import javafx.scene.control.SplitPane?>
-<?import javafx.scene.control.Tab?>
-<?import javafx.scene.control.TabPane?>
-<?import javafx.scene.control.TextArea?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Pane?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
 
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.MainController">
     <MenuBar VBox.vgrow="NEVER">
@@ -88,6 +72,19 @@
                                             <Insets left="5.0" right="5.0" top="5.0" />
                                         </padding>
                                         <VBox.margin>
+                                            <Insets left="30.0" />
+                                        </VBox.margin>
+                                        <CheckBox fx:id="fcbEQonly" disable="true" mnemonicParsing="false" text="Convert only EQ">
+                                            <HBox.margin>
+                                                <Insets />
+                                            </HBox.margin>
+                                        </CheckBox>
+                                    </HBox>
+                                    <HBox spacing="10.0">
+                                        <padding>
+                                            <Insets left="5.0" right="5.0" top="5.0" />
+                                        </padding>
+                                        <VBox.margin>
                                             <Insets top="30.0" />
                                         </VBox.margin>
                                         <CheckBox fx:id="fCBconvBD" mnemonicParsing="false" onAction="#actionCBconvBD" text="Conversion of Boundary dataset" />
@@ -110,7 +107,7 @@
                                         </VBox.margin>
                                         <CheckBox fx:id="fCBconvSplitBDREF" disable="true" mnemonicParsing="false" onAction="#actionCBconvBD2" text="Split Boundary and Reference data (CGMES v3.0)" />
                                     </HBox>
-                                    <HBox spacing="10.0">
+                                    <HBox spacing="10.0" VBox.vgrow="ALWAYS">
                                         <padding>
                                             <Insets left="5.0" right="5.0" top="5.0" />
                                         </padding>
@@ -122,12 +119,109 @@
                                     <HBox alignment="BOTTOM_LEFT" nodeOrientation="RIGHT_TO_LEFT" prefHeight="72.0" prefWidth="1273.0" spacing="10.0">
                                         <Button fx:id="btnConvert" minWidth="60.0" mnemonicParsing="false" onAction="#actionBtnConvert" text="Convert" HBox.hgrow="ALWAYS">
                                  <HBox.margin>
-                                    <Insets />
+                                    <Insets bottom="10.0" />
                                  </HBox.margin></Button>
-                                        <Button fx:id="btnResetIGM" minWidth="60.0" mnemonicParsing="false" onAction="#actionBtnReset" text="Reset" />
+                                        <Button fx:id="btnResetIGM" minWidth="60.0" mnemonicParsing="false" onAction="#actionBtnReset" text="Reset">
+                                 <HBox.margin>
+                                    <Insets bottom="10.0" />
+                                 </HBox.margin></Button>
                               <VBox.margin>
                                  <Insets right="10.0" />
                               </VBox.margin>
+                                    </HBox>
+                                </VBox>
+                            </AnchorPane>
+                        </Tab>
+                        <Tab closable="false" text="Add switching devices">
+                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="378.0" prefWidth="1278.0">
+                                <VBox spacing="10.0" AnchorPane.bottomAnchor="-3.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                    <HBox spacing="10.0">
+                                        <padding>
+                                            <Insets left="5.0" right="5.0" top="5.0" />
+                                        </padding>
+                                        <VBox.margin>
+                                            <Insets top="20.0" />
+                                        </VBox.margin>
+                                        <CheckBox fx:id="fCBmodIGM" mnemonicParsing="false" onAction="#actionCBmodIGM" text="Modification of an Individual Grid Model (IGM)" />
+                                        <CheckBox fx:id="fCBmodCGM" mnemonicParsing="false" onAction="#actionCBmodCGM" text="Modification of a Common Grid Model (CGM)" />
+                                        <Label text="Data exchange standard:" wrapText="true" />
+                                        <ChoiceBox fx:id="fCBCGMESstd" HBox.hgrow="ALWAYS">
+                                            <HBox.margin>
+                                                <Insets />
+                                            </HBox.margin>
+                                        </ChoiceBox>
+                                    </HBox>
+                                    <HBox spacing="10.0">
+                                        <padding>
+                                            <Insets left="5.0" right="5.0" top="5.0" />
+                                        </padding>
+                                        <VBox.margin>
+                                            <Insets left="30.0" />
+                                        </VBox.margin>
+                                        <Label minWidth="270.0" text="Select IGM or CGM including boundary" wrapText="true" />
+                                        <TextField fx:id="fPathIGMCGM" editable="false" HBox.hgrow="ALWAYS" />
+                                        <Button fx:id="fBrowseIGMCGM" disable="true" mnemonicParsing="false" onAction="#actionBrowseIGMCGM" text="Browse">
+                                            <HBox.margin>
+                                                <Insets right="10.0" />
+                                            </HBox.margin>
+                                        </Button>
+                                    </HBox>
+                                    <HBox spacing="10.0">
+                                        <padding>
+                                            <Insets left="5.0" right="5.0" top="5.0" />
+                                        </padding>
+                                        <CheckBox fx:id="fCBmapFile" mnemonicParsing="false" onAction="#actionImpMapping" text="Import mapping file" />
+                                        <TextField fx:id="fPathMapFile" editable="false" HBox.hgrow="ALWAYS" />
+                                        <Button fx:id="fBrowseMapFile" disable="true" mnemonicParsing="false" onAction="#actionBrowseMapFile" text="Browse">
+                                            <HBox.margin>
+                                                <Insets right="10.0" />
+                                            </HBox.margin>
+                                        </Button>
+                                    </HBox>
+                                    <HBox spacing="10.0">
+                                        <padding>
+                                            <Insets left="5.0" right="5.0" top="5.0" />
+                                        </padding>
+                                        <VBox.margin>
+                                            <Insets />
+                                        </VBox.margin>
+                                        <CheckBox fx:id="fcbAllCondEQ" mnemonicParsing="false" onAction="#actionCBallCondEq" text="Apply to all ConductingEquipment">
+                                            <HBox.margin>
+                                                <Insets />
+                                            </HBox.margin>
+                                        </CheckBox>
+                                        <CheckBox fx:id="fCBlines" mnemonicParsing="false" onAction="#actionCBapplyLines" text="Apply to Lines" />
+                                        <CheckBox fx:id="fCBrafo" mnemonicParsing="false" onAction="#actionCBapplyPT" text="Apply to PowerTransformer" />
+                                        <CheckBox fx:id="fcbSM" mnemonicParsing="false" onAction="#actionCBApplySM" text="Apply to SynchronousMachine">
+                                            <HBox.margin>
+                                                <Insets />
+                                            </HBox.margin>
+                                        </CheckBox>
+                                    </HBox>
+                                    <HBox spacing="10.0" VBox.vgrow="ALWAYS">
+                                        <padding>
+                                            <Insets left="5.0" right="5.0" top="5.0" />
+                                        </padding>
+                                        <CheckBox fx:id="fcbexportMapfile" mnemonicParsing="false" text="Export mapping file">
+                                            <HBox.margin>
+                                                <Insets />
+                                            </HBox.margin>
+                                        </CheckBox>
+                                    </HBox>
+                                    <HBox alignment="BOTTOM_LEFT" nodeOrientation="RIGHT_TO_LEFT" prefHeight="72.0" prefWidth="1273.0" spacing="10.0">
+                                        <VBox.margin>
+                                            <Insets right="10.0" />
+                                        </VBox.margin>
+                                        <Button fx:id="btnModify" minWidth="60.0" mnemonicParsing="false" onAction="#actionBtnModify" text="Modify" HBox.hgrow="ALWAYS">
+                                            <HBox.margin>
+                                                <Insets bottom="10.0" />
+                                            </HBox.margin>
+                                        </Button>
+                                        <Button fx:id="btnResetSwitchingdevices" minWidth="60.0" mnemonicParsing="false" onAction="#actionBtnResetModify" text="Reset">
+                                            <HBox.margin>
+                                                <Insets bottom="10.0" />
+                                            </HBox.margin>
+                                        </Button>
                                     </HBox>
                                 </VBox>
                             </AnchorPane>
@@ -175,6 +269,6 @@
                 </padding>
             </ProgressBar>
         </Pane>
-        <Label font="$x3" text="Version: 2023.2" HBox.hgrow="NEVER" />
+        <Label font="$x3" text="Version: 2023.3" HBox.hgrow="NEVER" />
     </HBox>
 </VBox>
