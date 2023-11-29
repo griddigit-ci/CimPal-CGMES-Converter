@@ -85,6 +85,20 @@
                                             <Insets left="5.0" right="5.0" top="5.0" />
                                         </padding>
                                         <VBox.margin>
+                                            <Insets left="30.0" />
+                                        </VBox.margin>
+                                        <Label text="Model improvements:" wrapText="true" />
+                                        <CheckBox fx:id="fcbRegCont" disable="true" mnemonicParsing="false" text="Align RegulatingControl targets">
+                                            <HBox.margin>
+                                                <Insets />
+                                            </HBox.margin>
+                                        </CheckBox>
+                                    </HBox>
+                                    <HBox spacing="10.0">
+                                        <padding>
+                                            <Insets left="5.0" right="5.0" top="5.0" />
+                                        </padding>
+                                        <VBox.margin>
                                             <Insets top="30.0" />
                                         </VBox.margin>
                                         <CheckBox fx:id="fCBconvBD" mnemonicParsing="false" onAction="#actionCBconvBD" text="Conversion of Boundary dataset" />

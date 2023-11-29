@@ -68,7 +68,9 @@ public class InstanceDataFactory {
                         break;
                 }
                 inputStream = new FileInputStream(file.toString());
-                singlezip=true;
+                inputStreamList = new LinkedList<>();
+                inputStreamList.add(inputStream);
+                singlezip=false;
             }
 
             if (singlezip){
@@ -98,6 +100,19 @@ public class InstanceDataFactory {
                     RDFDataMgr.read(model, inputStreamItem, xmlBase, rdfSourceFormat);
                     prefixMap.putAll(model.getNsPrefixMap());
                     prefixMapWithoutHeader.putAll(model.getNsPrefixMap());
+
+                    if (!extension.equals("rdf")) {
+                        String filename = FilenameUtils.getName(file.toString());
+                        if (filename.contains("_EQ") && !filename.contains("_EQBD") && !filename.contains("_EQ_BD")) {
+                            ModelManipulationFactory.nameMap.put("EQ", filename);
+                        } else if (filename.contains("_SSH")) {
+                            ModelManipulationFactory.nameMap.put("SSH", filename);
+                        } else if (filename.contains("_SV")) {
+                            ModelManipulationFactory.nameMap.put("SV", filename);
+                        } else if (filename.contains("_TP") && !filename.contains("_TPBD") && !filename.contains("_TP_BD")) {
+                            ModelManipulationFactory.nameMap.put("TP", filename);
+                        }
+                    }
 
                     //get profile short name for CGMES v2.4, keyword for CGMES v3
                     String keyword=getProfileKeyword(model);
@@ -414,13 +429,13 @@ public class InstanceDataFactory {
                     try{
                         inputStream = zipFile.getInputStream(entry);
                         inputstreamlist.add(inputStream);
-                        if (entry.getName().contains("_EQ")){
+                        if (entry.getName().contains("_EQ") && !entry.getName().contains("_EQBD") && !entry.getName().contains("_EQ_BD")){
                             ModelManipulationFactory.nameMap.put("EQ", entry.getName());
                         }else if (entry.getName().contains("_SSH")){
                             ModelManipulationFactory.nameMap.put("SSH", entry.getName());
                         }else if (entry.getName().contains("_SV")){
                             ModelManipulationFactory.nameMap.put("SV", entry.getName());
-                        }else if (entry.getName().contains("_TP")){
+                        }else if (entry.getName().contains("_TP") && !entry.getName().contains("_TPBD") && !entry.getName().contains("_TP_BD")){
                             ModelManipulationFactory.nameMap.put("TP", entry.getName());
                         }
                     } catch (IOException e) {

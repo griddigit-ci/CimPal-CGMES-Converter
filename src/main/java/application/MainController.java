@@ -56,6 +56,7 @@ public class MainController implements Initializable {
     public ChoiceBox fCBCGMESstd;
     public CheckBox fCBmodCGM;
     public CheckBox fCBmodIGM;
+    public CheckBox fcbRegCont;
     @FXML
     private TextField fPathIGM;
 
@@ -213,7 +214,8 @@ public class MainController implements Initializable {
             fcbEQonly.setDisable(false);
             fcbEQonly.setSelected(false);
             fCBconvBD.setDisable(true);
-
+            fcbRegCont.setDisable(false);
+            fcbRegCont.setSelected(false);
         }else{
             fBrowse.setDisable(true);
             fcbKeepExt.setDisable(true);
@@ -221,6 +223,8 @@ public class MainController implements Initializable {
             fcbKeepExt.setSelected(false);
             fcbEQonly.setDisable(true);
             fcbEQonly.setSelected(false);
+            fcbRegCont.setDisable(true);
+            fcbRegCont.setSelected(false);
         }
 
     }
@@ -375,6 +379,7 @@ public class MainController implements Initializable {
             ibBDconversion=false;
             int keepE;
             int eqo;
+            int fixRegCont;
             if (fcbKeepExt.isSelected()){
                 keepE = 1;
             }else{
@@ -385,7 +390,12 @@ public class MainController implements Initializable {
             }else{
                 eqo = 0;
             }
-            ConvertCGMESv2v3(loadDataMap,keepE,eqo);
+            if (fcbRegCont.isSelected()){
+                fixRegCont = 1;
+            }else {
+                fixRegCont = 0;
+            }
+            ConvertCGMESv2v3(loadDataMap,keepE,eqo,fixRegCont);
         }
 
         if (fCBconvBD.isSelected()){

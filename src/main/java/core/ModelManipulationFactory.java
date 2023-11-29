@@ -28,7 +28,7 @@ public class ModelManipulationFactory {
     public static Map<String, String> nameMap;
 
     //Convert CGMES v2.4 to CGMES v3.0
-    public static void ConvertCGMESv2v3(Map<String, Map> loadDataMap, int keepExtensions, int eqOnly) throws IOException {
+    public static void ConvertCGMESv2v3(Map<String, Map> loadDataMap, int keepExtensions, int eqOnly, int fixRegCont) throws IOException {
 
 
         //Map<String, Map> loadDataMap= new HashMap<>();
@@ -70,19 +70,19 @@ public class ModelManipulationFactory {
         //RDFFormat rdfFormat = CustomRDFFormat.RDFXML_CUSTOM_PLAIN;
 
 
-        //TODO to be improved what file names should be assigned. Now it takes same names
+        //TODO to be improved what file names should be assigned. Now it takes the same names
         nameMap = new HashMap<>();
-        for (File item : MainController.IDModel) {
-            if (item.toString().contains("_EQ")) {
-                nameMap.put("EQ", item.getName());
-            } else if (item.toString().contains("_SSH")) {
-                nameMap.put("SSH", item.getName());
-            } else if (item.toString().contains("_SV")) {
-                nameMap.put("SV", item.getName());
-            } else if (item.toString().contains("_TP")) {
-                nameMap.put("TP", item.getName());
-            }
-        }
+//        for (File item : MainController.IDModel) {
+//            if (item.toString().contains("_EQ") && !item.toString().contains("_EQBD") && !item.toString().contains("_EQ_BD")) {
+//                nameMap.put("EQ", item.getName());
+//            } else if (item.toString().contains("_SSH")) {
+//                nameMap.put("SSH", item.getName());
+//            } else if (item.toString().contains("_SV")) {
+//                nameMap.put("SV", item.getName());
+//            } else if (item.toString().contains("_TP")) {
+//                nameMap.put("TP", item.getName());
+//            }
+//        }
 
         Map<String, Model> baseInstanceModelMap = InstanceDataFactory.modelLoad(MainController.IDModel, xmlBase, null);
 
@@ -135,7 +135,7 @@ public class ModelManipulationFactory {
         Property mrid = ResourceFactory.createProperty("http://iec.ch/TC57/CIM100#IdentifiedObject.mRID");
 
         //add header for EQ
-        Resource headerRes = modelEQ.listSubjectsWithProperty(RDF.type, (RDFNode) ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#", "FullModel")).nextResource();
+        Resource headerRes = modelEQ.listSubjectsWithProperty(RDF.type, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#", "FullModel")).nextResource();
         for (StmtIterator n = modelEQ.listStatements(new SimpleSelector(headerRes, null, (RDFNode) null)); n.hasNext(); ) {
             Statement stmtH = n.next();
             if (stmtH.getPredicate().getLocalName().equals("Model.profile")) {
@@ -167,7 +167,7 @@ public class ModelManipulationFactory {
         if (eqOnly == 0) {
             //add header for SSH
             RDFNode sshMAS = null;
-            headerRes = modelSSH.listSubjectsWithProperty(RDF.type, (RDFNode) ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#", "FullModel")).nextResource();
+            headerRes = modelSSH.listSubjectsWithProperty(RDF.type, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#", "FullModel")).nextResource();
             for (StmtIterator n = modelSSH.listStatements(new SimpleSelector(headerRes, null, (RDFNode) null)); n.hasNext(); ) {
                 Statement stmtH = n.next();
                 if (stmtH.getPredicate().getLocalName().equals("Model.profile")) {
@@ -501,6 +501,15 @@ public class ModelManipulationFactory {
         getSvStInService.add("ExternalNetworkInjection");
         getSvStInService.add("ConformLoad");
 
+        List<String> getDCratedUdc = new LinkedList<>();
+        getDCratedUdc.add("DCDisconnector");
+        getDCratedUdc.add("DCBreaker");
+        getDCratedUdc.add("DCGround");
+        getDCratedUdc.add("DCBusbar");
+        getDCratedUdc.add("DCShunt");
+        getDCratedUdc.add("DCLineSegment");
+        getDCratedUdc.add("DCSeriesDevice");
+
 
         Resource newSub = null;
         Property newPre;
@@ -585,7 +594,7 @@ public class ModelManipulationFactory {
             //TODO see if something should be done for SvPowerFlow = 0
 
             //convert TP
-            //TODO the 2 DC related associations
+
             for (StmtIterator c = modelTP.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); c.hasNext(); ) { // loop on all classes
                 Statement stmtC = c.next();
                 String className = stmtC.getObject().asResource().getLocalName();
@@ -621,6 +630,11 @@ public class ModelManipulationFactory {
         if (modelEQ.listStatements(null, RDF.type, ResourceFactory.createProperty(cim16NS, "ConnectivityNode")).hasNext()) {
             hasCN = 1;
         }
+        //check if EQ has DCNodes
+        int hasDCN = 0;
+        if (modelEQ.listStatements(null, RDF.type, ResourceFactory.createProperty(cim16NS, "DCNode")).hasNext()) {
+            hasDCN = 1;
+        }
         if (eqOnly == 0) {
             // convert TN of TP
             for (StmtIterator c = modelTP.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); c.hasNext(); ) { // loop on all classes
@@ -630,6 +644,7 @@ public class ModelManipulationFactory {
 
                     int hasMRid = 0;
                     Resource newCNres = null;
+                    Resource newDCNres = null;
 
                     if (hasCN == 0 && className.equals("TopologicalNode")) { // need to create CN and add it to EQ and link here in TP
                         String uuidCN = String.valueOf(UUID.randomUUID());
@@ -638,6 +653,15 @@ public class ModelManipulationFactory {
                         convEQModel.add(ResourceFactory.createStatement(newCNres, mrid, ResourceFactory.createPlainLiteral(uuidCN)));
                         convTPModel.add(ResourceFactory.createStatement(newCNres, RDF.type, ResourceFactory.createProperty(cim17NS, "ConnectivityNode")));
                         convTPModel.add(ResourceFactory.createStatement(newCNres, ResourceFactory.createProperty(cim17NS, "ConnectivityNode.TopologicalNode"), ResourceFactory.createProperty(stmtC.getSubject().toString())));
+                    }
+
+                    if (hasDCN == 0 && className.equals("DCTopologicalNode")) { // need to create DCNobe and add it to EQ and link here in TP
+                        String uuidDCN = String.valueOf(UUID.randomUUID());
+                        newDCNres = ResourceFactory.createResource(cim17NS + "_" + uuidDCN);
+                        convEQModel.add(ResourceFactory.createStatement(newDCNres, RDF.type, ResourceFactory.createProperty(cim17NS, "DCNode")));
+                        convEQModel.add(ResourceFactory.createStatement(newDCNres, mrid, ResourceFactory.createPlainLiteral(uuidDCN)));
+                        convTPModel.add(ResourceFactory.createStatement(newDCNres, RDF.type, ResourceFactory.createProperty(cim17NS, "DCNode")));
+                        convTPModel.add(ResourceFactory.createStatement(newDCNres, ResourceFactory.createProperty(cim17NS, "DCNode.DCTopologicalNode"), ResourceFactory.createProperty(stmtC.getSubject().toString())));
                     }
 
                     for (StmtIterator a = modelTP.listStatements(new SimpleSelector(stmtC.getSubject(), null, (RDFNode) null)); a.hasNext(); ) { // loop on all attributes
@@ -664,6 +688,25 @@ public class ModelManipulationFactory {
                             for (StmtIterator t = modelTP.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "Terminal.TopologicalNode"), stmtC.getSubject())); t.hasNext(); ) { // loop on all classes
                                 Statement stmtT = t.next();
                                 convEQModel.add(ResourceFactory.createStatement(stmtT.getSubject(), ResourceFactory.createProperty(cim17NS, "Terminal.ConnectivityNode"), ResourceFactory.createProperty(newCNres.toString())));
+                            }
+                        }
+
+
+                        if (hasDCN == 0 && className.equals("DCTopologicalNode")) { //manage the container of the DCNode and the link with the Terminal
+                            if (newPre.getLocalName().equals("IdentifiedObject.name")) {
+                                convEQModel.add(ResourceFactory.createStatement(newDCNres, newPre, newObj));
+                            }
+                            if (newPre.getLocalName().equals("DCTopologicalNode.DCEquipmentContainer")) {
+                                convEQModel.add(ResourceFactory.createStatement(newDCNres, ResourceFactory.createProperty(cim17NS, "DCNode.DCEquipmentContainer"), newObj));
+                            }
+
+                            for (StmtIterator t = modelTP.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "DCTerminal.DCTopologicalNode"), stmtC.getSubject())); t.hasNext(); ) { // loop on all classes
+                                Statement stmtT = t.next();
+                                convEQModel.add(ResourceFactory.createStatement(stmtT.getSubject(), ResourceFactory.createProperty(cim17NS, "DCTerminal.DCNode"), ResourceFactory.createProperty(newDCNres.toString())));
+                            }
+                            for (StmtIterator t = modelTP.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "ACDCConverterDCTerminal.DCTopologicalNode"), stmtC.getSubject())); t.hasNext(); ) { // loop on all classes
+                                Statement stmtT = t.next();
+                                convEQModel.add(ResourceFactory.createStatement(stmtT.getSubject(), ResourceFactory.createProperty(cim17NS, "ACDCConverterDCTerminal.DCNode"), ResourceFactory.createProperty(newDCNres.toString())));
                             }
                         }
 
@@ -735,6 +778,22 @@ public class ModelManipulationFactory {
                 int hasTerSeqNum = 0;
                 int hasContainment = 0;
 
+                //check if there is ratedUdc attribute
+                boolean hasratedUdc = false;
+                boolean addDefaultratedUdc = false;
+                if (getDCratedUdc.contains(className)) {
+                    for (StmtIterator adc = modelEQ.listStatements(new SimpleSelector(stmtC.getSubject(), null, (RDFNode) null)); adc.hasNext(); ) { // loop on all attributes
+                        Statement stmtAdc = adc.next();
+                        if (stmtAdc.getPredicate().getLocalName().contains(".ratedUdc")) {
+                            hasratedUdc = true;
+                            break;
+                        }
+                    }
+                    if (!hasratedUdc){// the original data does not have ratedUdc, add default
+                        addDefaultratedUdc=true;
+                    }
+                }
+
                 for (StmtIterator a = modelEQ.listStatements(new SimpleSelector(stmtC.getSubject(), null, (RDFNode) null)); a.hasNext(); ) { // loop on all attributes
                     Statement stmtA = a.next();
 
@@ -780,6 +839,14 @@ public class ModelManipulationFactory {
                             newObj = ResourceFactory.createProperty(euNS, "LimitKind" + kindType);
                         }
                     }
+
+                    //fix DC classes ratedUdc; move the value to DCConductingEquipment
+                    if (getDCratedUdc.contains(className)) {
+                        if (newPre.getLocalName().contains(".ratedUdc")) {
+                            convEQModel.add(newSub, ResourceFactory.createProperty(cim17NS, "DCConductingEquipment.ratedUdc"), newObj);
+                        }
+                    }
+
                     //fix operational limit set
                     if (className.equals("OperationalLimitSet")) {
                         if (newPre.getLocalName().equals("OperationalLimitSet.Equipment")) {
@@ -794,6 +861,10 @@ public class ModelManipulationFactory {
 
                     if (newPre.getLocalName().equals("Equipment.aggregate")) {
                         if (!className.equals("EquivalentBranch") && !className.equals("EquivalentShunt") && !className.equals("EquivalentInjection")) {
+                            convEQModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
+                        }
+                    } else if (getDCratedUdc.contains(className)){
+                        if (!newPre.getLocalName().contains(".ratedUdc")) {
                             convEQModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
                         }
                     } else {
@@ -814,6 +885,14 @@ public class ModelManipulationFactory {
                     }
 
                 }
+
+                //add default the ratedUdc to DCConductingEquipment
+                //TODO may need to request user input
+                if (addDefaultratedUdc){
+                    convEQModel.add(newSub, ResourceFactory.createProperty(cim17NS, "DCConductingEquipment.ratedUdc"), ResourceFactory.createPlainLiteral("320"));
+                    System.out.print("WARNING: Default value for ratedUdc was added to the class: "+className+ " with ID: "+ newSub.getLocalName()+".\n");
+                }
+
                 assert newSub != null;
                 //add Equipment.inservice to SSH
                 if (eqOnly == 0) {
@@ -927,6 +1006,65 @@ public class ModelManipulationFactory {
                     }
                 }
             }
+        }
+
+        //fix RegulatingControl targers - voltage
+        if (fixRegCont == 1) {
+            List<Resource> processedRC = new LinkedList<>();
+            for (StmtIterator rc = convEQModel.listStatements(new SimpleSelector(null, RDF.type, ResourceFactory.createProperty(cim17NS,"RegulatingControl"))); rc.hasNext(); ) { // loop on RegulatingControl classes
+                Statement stmtRC = rc.next();
+                if (processedRC.isEmpty() || !processedRC.contains(stmtRC.getSubject())) {
+                    List<Resource> relatedRegCont = new LinkedList<>();
+                    List<Float> controltarget = new LinkedList<>();
+                    String mode = convEQModel.getRequiredProperty(stmtRC.getSubject(), ResourceFactory.createProperty(cim17NS, "RegulatingControl.mode")).getObject().asResource().getLocalName();
+                    if (mode.equals("RegulatingControlModeKind.voltage")) {
+                        //check if the control is enabled
+                        if (convSSHModel.getRequiredProperty(stmtRC.getSubject(), ResourceFactory.createProperty(cim17NS, "RegulatingControl.enabled")).getObject().asLiteral().getString().equals("true")) {
+                            relatedRegCont.add(stmtRC.getSubject());
+                            processedRC.add(stmtRC.getSubject());
+                            float voltagetarget = convSSHModel.getRequiredProperty(stmtRC.getSubject(), ResourceFactory.createProperty(cim17NS, "RegulatingControl.targetValue")).getObject().asLiteral().getFloat();
+                            controltarget.add(voltagetarget);
+
+                            // check for other Regulating controls related to this TN
+                            List<Resource> relatedRegContTemp = null;
+                            List<Float> controltargetTemp = null;
+                            for (StmtIterator tntp = convTPModel.listStatements(new SimpleSelector(null, RDF.type, ResourceFactory.createProperty(cim17NS,"TopologicalNode"))); tntp.hasNext(); ) { // loop on TopologicalNode classes
+                                Statement stmtTN = tntp.next();
+                                relatedRegContTemp = new LinkedList<>();
+                                controltargetTemp = new LinkedList<>();
+                                //loop on all CN that connect to this TN
+                                for (StmtIterator cn = convTPModel.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim17NS,"ConnectivityNode.TopologicalNode"), stmtTN.getSubject())); cn.hasNext(); ) { // loop on CN
+                                    Statement stmtCN = cn.next();
+                                    //loop on all terminals that connect to this TN
+                                    for (StmtIterator term = convEQModel.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim17NS,"Terminal.ConnectivityNode"), stmtCN.getSubject())); term.hasNext(); ) { // loop on Terminals
+                                        Statement stmterm = term.next();
+                                        //for each of Terminals that relate to the TN
+                                        //then get the enabled Reg controls that are with mode voltage,
+                                        for (StmtIterator rc1 = convEQModel.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim17NS,"RegulatingControl.Terminal"), stmterm.getSubject())); rc1.hasNext(); ) { // loop on RC
+                                            Statement stmtRC1 = rc1.next();
+                                            mode = convEQModel.getRequiredProperty(stmtRC1.getSubject(), ResourceFactory.createProperty(cim17NS, "RegulatingControl.mode")).getObject().asResource().getLocalName();
+                                            if (mode.equals("RegulatingControlModeKind.voltage")) {
+                                                //check if the control is enabled
+                                                if (convSSHModel.getRequiredProperty(stmtRC1.getSubject(), ResourceFactory.createProperty(cim17NS, "RegulatingControl.enabled")).getObject().asLiteral().getString().equals("true")) {
+                                                    relatedRegContTemp.add(stmtRC1.getSubject());
+                                                    float voltagetarget1 = convSSHModel.getRequiredProperty(stmtRC1.getSubject(), ResourceFactory.createProperty(cim17NS, "RegulatingControl.targetValue")).getObject().asLiteral().getFloat();
+                                                    controltargetTemp.add(voltagetarget1);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            // if one control: For the TN: - do nothing as the single control was added to the list already
+                            // if more controls compare target values
+                            if (relatedRegContTemp.size()>1){
+                                //TODO compare targets, save in the right lists
+                            }
+                        }
+                    }
+                }
+            }
+
         }
 
         //add the model to the map
@@ -2114,6 +2252,8 @@ public class ModelManipulationFactory {
 
         return uuidList;
     }
+
+
 
 }
 
