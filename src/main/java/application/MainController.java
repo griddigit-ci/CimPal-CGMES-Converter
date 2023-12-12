@@ -421,7 +421,7 @@ public class MainController implements Initializable {
     public void actionBtnModify() throws URISyntaxException, IOException {
 
         String cgmesVersion="";
-        if(fCBCGMESstd.getSelectionModel().getSelectedItem().toString().equals("CGMES v2.4 (IEC TS 61970-600-1,-2:2017")){
+        if(fCBCGMESstd.getSelectionModel().getSelectedItem().toString().equals("CGMES v2.4 (IEC TS 61970-600-1,-2:2017)")){
             cgmesVersion = "CGMESv2.4";
         }else if (fCBCGMESstd.getSelectionModel().getSelectedItem().toString().equals("CGMES v3.0 (IEC 61970-600-1,-2:2021)")){
             cgmesVersion = "CGMESv3.0";
