@@ -6,20 +6,14 @@
  @author Chavdar Ivanov
  -->
 
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.ButtonBar?>
-<?import javafx.scene.control.Hyperlink?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.shape.Line?>
-<?import javafx.scene.text.Font?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.scene.text.*?>
 
-<VBox xmlns="http://javafx.com/javafx/19.0.2.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.AboutController">
+<VBox xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.AboutController">
    <children>
       <HBox alignment="TOP_CENTER" prefHeight="100.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
          <children>
@@ -31,7 +25,7 @@
                      </image>
                   </ImageView>
                   <Line endX="667.0" layoutX="115.0" layoutY="203.0" startX="-100.0" strokeLineCap="ROUND" strokeWidth="2.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" />
-                  <Label contentDisplay="TOP" layoutX="69.0" layoutY="216.0" text="CimPal CGMES v2.4 to CGMES v3.0 Converter&#10;Version: 2023.2&#10;Date: 07-Apr-2023&#10;&#10;Based on &#10;- Apache Jena (Apache License v2.0), &#10;- TopBraid SHACL API (Apache License v2.0), and &#10;- JAVAFX (GPLv2+CE license)&#10;&#10;CimPal is licensed under  EUPL-1.2-or-later&#10;Copyright 2023, gridDigIt Kft. All rights reserved.&#10;&#10;gridDigIt aims at providing support and further enhancement of the CimPal. &#10;Please address any requests either via the support email or in GitHub." textAlignment="CENTER" wrapText="true">
+                  <Label contentDisplay="TOP" layoutX="69.0" layoutY="216.0" text="CimPal CGMES v2.4 to CGMES v3.0 Converter&#10;Version: 2023.3&#10;Date: 29-Dec-2023&#10;&#10;Based on &#10;- Apache Jena (Apache License v2.0), &#10;- TopBraid SHACL API (Apache License v2.0), and &#10;- JAVAFX (GPLv2+CE license)&#10;&#10;CimPal is licensed under  EUPL-1.2-or-later&#10;Copyright 2023, gridDigIt Kft. All rights reserved.&#10;&#10;gridDigIt aims at providing support and further enhancement of the CimPal. &#10;Please address any requests either via the support email or in GitHub." textAlignment="CENTER" wrapText="true">
                      <font>
                         <Font name="System Bold" size="18.0" />
                      </font>

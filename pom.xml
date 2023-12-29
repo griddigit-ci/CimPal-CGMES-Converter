@@ -7,13 +7,13 @@
     <jdk.version>11</jdk.version>
     <log4j.version>2.12.1</log4j.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jena.version>4.9.0</jena.version>
+    <jena.version>4.10.0</jena.version>
     <javafx.version>19.0.2.1</javafx.version>
   </properties>
 
   <groupId>eu.griddigit</groupId>
   <artifactId>CimPalCGMESConverter</artifactId>
-  <version>2023.2</version>
+  <version>2023.3</version>
 
 
   <build>

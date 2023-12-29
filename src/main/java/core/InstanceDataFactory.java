@@ -7,9 +7,10 @@
 package core;
 
 import application.MainController;
-import customWriter.CustomRDFFormat;
+import common.customWriter.CustomRDFFormat;
 import javafx.scene.control.Alert;
 import javafx.stage.FileChooser;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.riot.Lang;
@@ -457,6 +458,27 @@ public class InstanceDataFactory {
         Path destPathNormalized = destPath.normalize(); //remove ../../ etc.
 
         return destPathNormalized.toString().startsWith(targetDir + File.separator);
+    }
+
+    //File(s) selection Filechooser
+    public static File filesavecustom(String titleExtensionFilter , List<String> extExtensionFilter, String Dialogtitle, String filename) {
+
+        File file = null;
+
+        FileChooser filechooser = new FileChooser();
+        filechooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter(titleExtensionFilter, extExtensionFilter));
+        filechooser.setInitialDirectory(new File(MainController.prefs.get("LastWorkingFolder", "")));
+        filechooser.setTitle(Dialogtitle);
+        filechooser.setInitialFileName(filename);
+
+        try {
+            file = filechooser.showSaveDialog(null);
+        } catch (Exception e) {
+            filechooser.setInitialDirectory(new File(String.valueOf(FileUtils.getUserDirectory())));
+            file = filechooser.showSaveDialog(null);
+        }
+
+        return file;
     }
 
 }

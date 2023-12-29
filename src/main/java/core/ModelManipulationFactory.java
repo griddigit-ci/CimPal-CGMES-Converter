@@ -7,19 +7,21 @@
 package core;
 
 import application.MainController;
-import com.fasterxml.jackson.databind.annotation.JsonAppend;
-import customWriter.CustomRDFFormat;
+import common.customWriter.CustomRDFFormat;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import org.apache.jena.rdf.model.*;
-import org.apache.jena.riot.Lang;
 import org.apache.jena.vocabulary.RDF;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -137,7 +139,7 @@ public class ModelManipulationFactory {
 
         //add header for EQ
         Resource headerRes = modelEQ.listSubjectsWithProperty(RDF.type, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#", "FullModel")).nextResource();
-        for (StmtIterator n = modelEQ.listStatements(new SimpleSelector(headerRes, null, (RDFNode) null)); n.hasNext(); ) {
+        for (StmtIterator n = modelEQ.listStatements(headerRes, null, (RDFNode) null); n.hasNext(); ) {
             Statement stmtH = n.next();
             if (stmtH.getPredicate().getLocalName().equals("Model.profile")) {
                 if (stmtH.getObject().asLiteral().getString().equals("http://entsoe.eu/CIM/EquipmentCore/3/1")) {
@@ -169,7 +171,7 @@ public class ModelManipulationFactory {
             //add header for SSH
             RDFNode sshMAS = null;
             headerRes = modelSSH.listSubjectsWithProperty(RDF.type, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#", "FullModel")).nextResource();
-            for (StmtIterator n = modelSSH.listStatements(new SimpleSelector(headerRes, null, (RDFNode) null)); n.hasNext(); ) {
+            for (StmtIterator n = modelSSH.listStatements(headerRes, null, (RDFNode) null); n.hasNext(); ) {
                 Statement stmtH = n.next();
                 if (stmtH.getPredicate().getLocalName().equals("Model.profile")) {
                     convSSHModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral("http://iec.ch/TC57/ns/CIM/SteadyStateHypothesis-EU/3.0")));
@@ -195,8 +197,8 @@ public class ModelManipulationFactory {
             }
 
             //add header for SV
-            headerRes = modelSV.listSubjectsWithProperty(RDF.type, (RDFNode) ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#", "FullModel")).nextResource();
-            for (StmtIterator n = modelSV.listStatements(new SimpleSelector(headerRes, null, (RDFNode) null)); n.hasNext(); ) {
+            headerRes = modelSV.listSubjectsWithProperty(RDF.type, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#", "FullModel")).nextResource();
+            for (StmtIterator n = modelSV.listStatements(headerRes, null, (RDFNode) null); n.hasNext(); ) {
                 Statement stmtH = n.next();
                 if (stmtH.getPredicate().getLocalName().equals("Model.profile")) {
                     convSVModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral("http://iec.ch/TC57/ns/CIM/StateVariables-EU/3.0")));
@@ -220,13 +222,13 @@ public class ModelManipulationFactory {
                     convSVModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), sshMAS));
                 }
             }
-            if (!convSVModel.listStatements(new SimpleSelector(null, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#", "Model.modelingAuthoritySet"), (RDFNode) null)).hasNext()) {
+            if (!convSVModel.listStatements(null, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#", "Model.modelingAuthoritySet"), (RDFNode) null).hasNext()) {
                 convSVModel.add(ResourceFactory.createStatement(headerRes, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#", "Model.modelingAuthoritySet"), sshMAS));
             }
 
             //add header for TP
-            headerRes = modelTP.listSubjectsWithProperty(RDF.type, (RDFNode) ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#", "FullModel")).nextResource();
-            for (StmtIterator n = modelTP.listStatements(new SimpleSelector(headerRes, null, (RDFNode) null)); n.hasNext(); ) {
+            headerRes = modelTP.listSubjectsWithProperty(RDF.type, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#", "FullModel")).nextResource();
+            for (StmtIterator n = modelTP.listStatements(headerRes, null, (RDFNode) null); n.hasNext(); ) {
                 Statement stmtH = n.next();
                 if (stmtH.getPredicate().getLocalName().equals("Model.profile")) {
                     convTPModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral("http://iec.ch/TC57/ns/CIM/Topology-EU/3.0")));
@@ -527,14 +529,14 @@ public class ModelManipulationFactory {
 
         if (eqOnly == 0) {
             //convert SV
-            for (StmtIterator c = modelSV.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); c.hasNext(); ) { // loop on all classes
+            for (StmtIterator c = modelSV.listStatements(null, RDF.type, (RDFNode) null); c.hasNext(); ) { // loop on all classes
                 Statement stmtC = c.next();
                 String className = stmtC.getObject().asResource().getLocalName();
                 if (!className.equals("FullModel")) {
 
                     int hasMRid = 0;
 
-                    for (StmtIterator a = modelSV.listStatements(new SimpleSelector(stmtC.getSubject(), null, (RDFNode) null)); a.hasNext(); ) { // loop on all attributes
+                    for (StmtIterator a = modelSV.listStatements(stmtC.getSubject(), null, (RDFNode) null); a.hasNext(); ) { // loop on all attributes
                         Statement stmtA = a.next();
 
                         Statement stmtArebase = rebaseStatement(stmtA, cim17NS, euNS);
@@ -559,12 +561,12 @@ public class ModelManipulationFactory {
             }
             // add SvSwitch
             //check if in the EQ there is Switch or subclass in CGMES v2.4
-            for (StmtIterator c = modelEQ.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); c.hasNext(); ) { // loop on all classes
+            for (StmtIterator c = modelEQ.listStatements(null, RDF.type, (RDFNode) null); c.hasNext(); ) { // loop on all classes
                 Statement stmtC = c.next();
                 String className = stmtC.getObject().asResource().getLocalName();
                 if (className.equals("Switch") || className.equals("GroundDisconnector") || className.equals("Disconnector") || className.equals("LoadBreakSwitch") || className.equals("Breaker")) {
                     //get status in SSH
-                    Statement swopen = modelSSH.listStatements(new SimpleSelector(stmtC.getSubject(), ResourceFactory.createProperty(cim16NS, "Switch.open"), (RDFNode) null)).nextStatement();
+                    Statement swopen = modelSSH.listStatements(stmtC.getSubject(), ResourceFactory.createProperty(cim16NS, "Switch.open"), (RDFNode) null).nextStatement();
                     //add .locked in SSH
                     convSSHModel.add(ResourceFactory.createStatement(rebaseResource(stmtC.getSubject(), cim17NS), ResourceFactory.createProperty(cim17NS, "Switch.locked"), ResourceFactory.createPlainLiteral("false")));
                     //create the SvSwitch
@@ -579,11 +581,11 @@ public class ModelManipulationFactory {
 
             //clean up SvVoltage=0
             List<Statement> stmtDelete = new LinkedList<>();
-            for (StmtIterator c = convSVModel.listStatements(new SimpleSelector(null, RDF.type, ResourceFactory.createProperty(cim17NS, "SvVoltage"))); c.hasNext(); ) { // loop on all classes
+            for (StmtIterator c = convSVModel.listStatements(null, RDF.type, ResourceFactory.createProperty(cim17NS, "SvVoltage")); c.hasNext(); ) { // loop on all classes
                 Statement stmtC = c.next();
                 float voltage = convSVModel.getRequiredProperty(stmtC.getSubject(), ResourceFactory.createProperty(cim17NS, "SvVoltage.v")).getFloat();
                 if (voltage == 0) {
-                    stmtDelete.addAll(convSVModel.listStatements(new SimpleSelector(stmtC.getSubject(), null, (RDFNode) null)).toList());
+                    stmtDelete.addAll(convSVModel.listStatements(stmtC.getSubject(), null, (RDFNode) null).toList());
                     Statement tnref = convSVModel.getRequiredProperty(stmtC.getSubject(), ResourceFactory.createProperty(cim17NS, "SvVoltage.TopologicalNode"));
                     if (convSVModel.contains(ResourceFactory.createStatement(stmtC.getSubject(), ResourceFactory.createProperty(cim17NS, "TopologicalIsland.TopologicalNodes"), tnref.getObject()))) {
                         stmtDelete.add(ResourceFactory.createStatement(stmtC.getSubject(), ResourceFactory.createProperty(cim17NS, "TopologicalIsland.TopologicalNodes"), tnref.getObject()));
@@ -596,15 +598,15 @@ public class ModelManipulationFactory {
 
             //convert TP
 
-            for (StmtIterator c = modelTP.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); c.hasNext(); ) { // loop on all classes
+            for (StmtIterator c = modelTP.listStatements(null, RDF.type, (RDFNode) null); c.hasNext(); ) { // loop on all classes
                 Statement stmtC = c.next();
                 String className = stmtC.getObject().asResource().getLocalName();
                 if (className.equals("Terminal")) {
                     RDFNode tnProp = modelTP.getRequiredProperty(stmtC.getSubject(), ResourceFactory.createProperty(cim16NS, "Terminal.TopologicalNode")).getObject();
                     Resource tnRes = tnProp.asResource();
-                    if (modelTPBD.listStatements(new SimpleSelector(tnRes, null, (RDFNode) null)).hasNext()) {
+                    if (modelTPBD.listStatements(tnRes, null, (RDFNode) null).hasNext()) {
                         Statement stmtArebase = null;
-                        for (StmtIterator a = modelTPBD.listStatements(new SimpleSelector(tnRes, null, (RDFNode) null)); a.hasNext(); ) { // loop on all attributes
+                        for (StmtIterator a = modelTPBD.listStatements(tnRes, null, (RDFNode) null); a.hasNext(); ) { // loop on all attributes
                             Statement stmtA = a.next();
                             stmtArebase = rebaseStatement(stmtA, cim17NS, euNS);
                             if (!excludeTPBDattributes.contains(stmtA.getPredicate().getLocalName())) {
@@ -617,7 +619,7 @@ public class ModelManipulationFactory {
 
                             }
                         }
-                        Resource cnRes = modelTPBD.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "ConnectivityNode.TopologicalNode"), tnProp)).next().getSubject();
+                        Resource cnRes = modelTPBD.listStatements(null, ResourceFactory.createProperty(cim16NS, "ConnectivityNode.TopologicalNode"), tnProp).next().getSubject();
                         convTPModel.add(ResourceFactory.createResource(cim17NS + cnRes.getLocalName()), RDF.type, ResourceFactory.createProperty(cim17NS, "ConnectivityNode"));
                         convEQModel.add(stmtC.getSubject(), ResourceFactory.createProperty(cim17NS, "Terminal.ConnectivityNode"), ResourceFactory.createProperty(cim17NS, cnRes.getLocalName()));
                         assert stmtArebase != null;
@@ -638,7 +640,7 @@ public class ModelManipulationFactory {
         }
         if (eqOnly == 0) {
             // convert TN of TP
-            for (StmtIterator c = modelTP.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); c.hasNext(); ) { // loop on all classes
+            for (StmtIterator c = modelTP.listStatements(null, RDF.type, (RDFNode) null); c.hasNext(); ) { // loop on all classes
                 Statement stmtC = c.next();
                 String className = stmtC.getObject().asResource().getLocalName();
                 if (!className.equals("FullModel")) {
@@ -665,7 +667,7 @@ public class ModelManipulationFactory {
                         convTPModel.add(ResourceFactory.createStatement(newDCNres, ResourceFactory.createProperty(cim17NS, "DCNode.DCTopologicalNode"), ResourceFactory.createProperty(stmtC.getSubject().toString())));
                     }
 
-                    for (StmtIterator a = modelTP.listStatements(new SimpleSelector(stmtC.getSubject(), null, (RDFNode) null)); a.hasNext(); ) { // loop on all attributes
+                    for (StmtIterator a = modelTP.listStatements(stmtC.getSubject(), null, (RDFNode) null); a.hasNext(); ) { // loop on all attributes
                         Statement stmtA = a.next();
 
                         Statement stmtArebase = rebaseStatement(stmtA, cim17NS, euNS);
@@ -686,7 +688,7 @@ public class ModelManipulationFactory {
                                 convEQModel.add(ResourceFactory.createStatement(newCNres, ResourceFactory.createProperty(cim17NS, "ConnectivityNode.ConnectivityNodeContainer"), newObj));
                             }
 
-                            for (StmtIterator t = modelTP.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "Terminal.TopologicalNode"), stmtC.getSubject())); t.hasNext(); ) { // loop on all classes
+                            for (StmtIterator t = modelTP.listStatements(null, ResourceFactory.createProperty(cim16NS, "Terminal.TopologicalNode"), stmtC.getSubject()); t.hasNext(); ) { // loop on all classes
                                 Statement stmtT = t.next();
                                 convEQModel.add(ResourceFactory.createStatement(stmtT.getSubject(), ResourceFactory.createProperty(cim17NS, "Terminal.ConnectivityNode"), ResourceFactory.createProperty(newCNres.toString())));
                             }
@@ -701,11 +703,11 @@ public class ModelManipulationFactory {
                                 convEQModel.add(ResourceFactory.createStatement(newDCNres, ResourceFactory.createProperty(cim17NS, "DCNode.DCEquipmentContainer"), newObj));
                             }
 
-                            for (StmtIterator t = modelTP.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "DCTerminal.DCTopologicalNode"), stmtC.getSubject())); t.hasNext(); ) { // loop on all classes
+                            for (StmtIterator t = modelTP.listStatements(null, ResourceFactory.createProperty(cim16NS, "DCTerminal.DCTopologicalNode"), stmtC.getSubject()); t.hasNext(); ) { // loop on all classes
                                 Statement stmtT = t.next();
                                 convEQModel.add(ResourceFactory.createStatement(stmtT.getSubject(), ResourceFactory.createProperty(cim17NS, "DCTerminal.DCNode"), ResourceFactory.createProperty(newDCNres.toString())));
                             }
-                            for (StmtIterator t = modelTP.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "ACDCConverterDCTerminal.DCTopologicalNode"), stmtC.getSubject())); t.hasNext(); ) { // loop on all classes
+                            for (StmtIterator t = modelTP.listStatements(null, ResourceFactory.createProperty(cim16NS, "ACDCConverterDCTerminal.DCTopologicalNode"), stmtC.getSubject()); t.hasNext(); ) { // loop on all classes
                                 Statement stmtT = t.next();
                                 convEQModel.add(ResourceFactory.createStatement(stmtT.getSubject(), ResourceFactory.createProperty(cim17NS, "ACDCConverterDCTerminal.DCNode"), ResourceFactory.createProperty(newDCNres.toString())));
                             }
@@ -720,13 +722,13 @@ public class ModelManipulationFactory {
             }
 
             //convert SSH
-            for (StmtIterator c = modelSSH.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); c.hasNext(); ) { // loop on all classes
+            for (StmtIterator c = modelSSH.listStatements(null, RDF.type, (RDFNode) null); c.hasNext(); ) { // loop on all classes
                 Statement stmtC = c.next();
                 String className = stmtC.getObject().asResource().getLocalName();
                 if (!className.equals("FullModel")) {
                     int hasMRid = 0;
 
-                    for (StmtIterator a = modelSSH.listStatements(new SimpleSelector(stmtC.getSubject(), null, (RDFNode) null)); a.hasNext(); ) { // loop on all attributes
+                    for (StmtIterator a = modelSSH.listStatements(stmtC.getSubject(), null, (RDFNode) null); a.hasNext(); ) { // loop on all attributes
                         Statement stmtA = a.next();
 
                         Statement stmtArebase = rebaseStatement(stmtA, cim17NS, euNS);
@@ -735,8 +737,8 @@ public class ModelManipulationFactory {
                         newObj = stmtArebase.getObject();
 
                         if (className.equals("EquivalentInjection") && (newPre.getLocalName().equals("EquivalentInjection.regulationStatus") || newPre.getLocalName().equals("EquivalentInjection.regulationTarget"))) {
-                            if (modelEQ.listStatements(new SimpleSelector(stmtC.getSubject(), ResourceFactory.createProperty(cim16NS, "EquivalentInjection.regulationCapability"), (RDFNode) null)).hasNext()) {
-                                String regulationCapability = modelEQ.listStatements(new SimpleSelector(stmtC.getSubject(), ResourceFactory.createProperty(cim16NS, "EquivalentInjection.regulationCapability"), (RDFNode) null)).next().getObject().toString();
+                            if (modelEQ.listStatements(stmtC.getSubject(), ResourceFactory.createProperty(cim16NS, "EquivalentInjection.regulationCapability"), (RDFNode) null).hasNext()) {
+                                String regulationCapability = modelEQ.listStatements(stmtC.getSubject(), ResourceFactory.createProperty(cim16NS, "EquivalentInjection.regulationCapability"), (RDFNode) null).next().getObject().toString();
                                 if (regulationCapability.equals("true")) {
                                     convSSHModel.add(ResourceFactory.createStatement(newSub, newPre, newObj));
                                 }
@@ -756,7 +758,7 @@ public class ModelManipulationFactory {
                 }
             }
             //add limits to SSH
-            for (StmtIterator c = modelEQ.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); c.hasNext(); ) { // loop on all classes
+            for (StmtIterator c = modelEQ.listStatements(null, RDF.type, (RDFNode) null); c.hasNext(); ) { // loop on all classes
                 Statement stmtC = c.next();
 
                 String className = stmtC.getObject().asResource().getLocalName();
@@ -770,7 +772,7 @@ public class ModelManipulationFactory {
 
 
         //convert EQ
-        for (StmtIterator c = modelEQ.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); c.hasNext(); ) { // loop on all classes
+        for (StmtIterator c = modelEQ.listStatements(null, RDF.type, (RDFNode) null); c.hasNext(); ) { // loop on all classes
             Statement stmtC = c.next();
             String className = stmtC.getObject().asResource().getLocalName();
             if (!className.equals("FullModel")) {
@@ -783,7 +785,7 @@ public class ModelManipulationFactory {
                 boolean hasratedUdc = false;
                 boolean addDefaultratedUdc = false;
                 if (getDCratedUdc.contains(className)) {
-                    for (StmtIterator adc = modelEQ.listStatements(new SimpleSelector(stmtC.getSubject(), null, (RDFNode) null)); adc.hasNext(); ) { // loop on all attributes
+                    for (StmtIterator adc = modelEQ.listStatements(stmtC.getSubject(), null, (RDFNode) null); adc.hasNext(); ) { // loop on all attributes
                         Statement stmtAdc = adc.next();
                         if (stmtAdc.getPredicate().getLocalName().contains(".ratedUdc")) {
                             hasratedUdc = true;
@@ -795,7 +797,7 @@ public class ModelManipulationFactory {
                     }
                 }
 
-                for (StmtIterator a = modelEQ.listStatements(new SimpleSelector(stmtC.getSubject(), null, (RDFNode) null)); a.hasNext(); ) { // loop on all attributes
+                for (StmtIterator a = modelEQ.listStatements(stmtC.getSubject(), null, (RDFNode) null); a.hasNext(); ) { // loop on all attributes
                     Statement stmtA = a.next();
 
                     Statement stmtArebase = rebaseStatement(stmtA, cim17NS, euNS);
@@ -851,8 +853,8 @@ public class ModelManipulationFactory {
                     //fix operational limit set
                     if (className.equals("OperationalLimitSet")) {
                         if (newPre.getLocalName().equals("OperationalLimitSet.Equipment")) {
-                            if (!modelEQ.listStatements(new SimpleSelector(stmtA.getSubject(), ResourceFactory.createProperty(cim16NS, "OperationalLimitSet.Terminal"), (RDFNode) null)).hasNext()) {
-                                Resource termRes = modelEQ.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "Terminal.ConductingEquipment"), stmtA.getObject())).next().getSubject();
+                            if (!modelEQ.listStatements(stmtA.getSubject(), ResourceFactory.createProperty(cim16NS, "OperationalLimitSet.Terminal"), (RDFNode) null).hasNext()) {
+                                Resource termRes = modelEQ.listStatements(null, ResourceFactory.createProperty(cim16NS, "Terminal.ConductingEquipment"), stmtA.getObject()).next().getSubject();
                                 convEQModel.add(newSub, ResourceFactory.createProperty(cim17NS, "OperationalLimitSet.Terminal"), ResourceFactory.createProperty(cim17NS, termRes.getLocalName()));
                             }
 
@@ -901,7 +903,7 @@ public class ModelManipulationFactory {
                         //if contains SvStatus add Equipment.inService with the same status
                         if (modelSV.contains(ResourceFactory.createResource(cim16NS + newSub.getLocalName()), ResourceFactory.createProperty(cim16NS, "SvStatus.inService"))) {
                             Statement oldObj = modelSV.getRequiredProperty(ResourceFactory.createResource(cim16NS + newSub.getLocalName()), ResourceFactory.createProperty(cim16NS, "SvStatus.inService"));
-                            if (!modelSSH.listStatements(new SimpleSelector(null, RDF.type, ResourceFactory.createProperty(cim16NS, className))).hasNext()) {
+                            if (!modelSSH.listStatements(null, RDF.type, ResourceFactory.createProperty(cim16NS, className)).hasNext()) {
                                 convSSHModel.add(ResourceFactory.createStatement(newSub, RDF.type, ResourceFactory.createProperty(cim17NS, "Equipment")));
                             }
                             convSSHModel.add(ResourceFactory.createStatement(newSub, ResourceFactory.createProperty(cim17NS, "Equipment.inService"), oldObj.getObject()));
@@ -909,7 +911,7 @@ public class ModelManipulationFactory {
                             //if it does not contain SvStatus, check ACDCTerminal.connected in SSH. If 1 or 2 Terminal device => connected false means inservice false; if 3 terminals if 2 terminals are true then inservice is true
                             //if Terminal.connected is true check is there is Switch and check the switch status. But the switch has to be related to the equipment
                             if (hasCN == 1) { // there are ConnectivityNodes in EQ
-                                List<Statement> stmtList = modelEQ.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "Terminal.ConductingEquipment"), ResourceFactory.createProperty(cim16NS + newSub.getLocalName()))).toList();
+                                List<Statement> stmtList = modelEQ.listStatements(null, ResourceFactory.createProperty(cim16NS, "Terminal.ConductingEquipment"), ResourceFactory.createProperty(cim16NS + newSub.getLocalName())).toList();
                                 int countTerm = stmtList.size();
                                 if (countTerm == 1) {
                                     Resource termRes = stmtList.get(0).getSubject();
@@ -924,7 +926,7 @@ public class ModelManipulationFactory {
                         }
 
 
-                        if (!modelSSH.listStatements(new SimpleSelector(null, RDF.type, ResourceFactory.createProperty(cim16NS, className))).hasNext()) {
+                        if (!modelSSH.listStatements(null, RDF.type, ResourceFactory.createProperty(cim16NS, className)).hasNext()) {
                             convSSHModel.add(ResourceFactory.createStatement(newSub, RDF.type, ResourceFactory.createProperty(cim17NS, "Equipment")));
                         }
                         convSSHModel.add(ResourceFactory.createStatement(newSub, ResourceFactory.createProperty(cim17NS, "Equipment.inService"), ResourceFactory.createPlainLiteral("true")));
@@ -935,7 +937,7 @@ public class ModelManipulationFactory {
                 if (eqOnly == 0) {
                     if (getSvStInService.contains(className)) {
                         //if (!modelSV.contains(ResourceFactory.createResource(cim16NS+newSub.getLocalName()),ResourceFactory.createProperty(cim16NS, "SvStatus.inService"))) {
-                        if (!modelSV.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "SvStatus.ConductingEquipment"), ResourceFactory.createProperty(newSub.toString()))).hasNext()) {
+                        if (!modelSV.listStatements(null, ResourceFactory.createProperty(cim16NS, "SvStatus.ConductingEquipment"), ResourceFactory.createProperty(newSub.toString())).hasNext()) {
                             //Statement oldObj = modelSV.getRequiredProperty(ResourceFactory.createResource(cim16NS+newSub.getLocalName()),ResourceFactory.createProperty(cim16NS, "SvStatus.inService"));
                             //Resource newSvStatusres = ResourceFactory.createResource(cim17NS + newSub.getLocalName());
                             //convSVModel.add(ResourceFactory.createStatement(newSvStatusres, RDF.type, ResourceFactory.createProperty(cim17NS, "SvStatus")));
@@ -963,7 +965,7 @@ public class ModelManipulationFactory {
                 if (className.equals("Terminal")) {
                     if (hasTerSeqNum == 0) {
                         Statement condEQ = modelEQ.getRequiredProperty(stmtC.getSubject(), ResourceFactory.createProperty(cim16NS, "Terminal.ConductingEquipment"));
-                        List<Statement> terminals = modelEQ.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "Terminal.ConductingEquipment"), condEQ.getObject())).toList();
+                        List<Statement> terminals = modelEQ.listStatements(null, ResourceFactory.createProperty(cim16NS, "Terminal.ConductingEquipment"), condEQ.getObject()).toList();
                         if (terminals.size() == 1) {
                             convEQModel.add(rebaseResource(stmtC.getSubject(), cim17NS), ResourceFactory.createProperty(cim17NS, "ACDCTerminal.sequenceNumber"), ResourceFactory.createPlainLiteral("1"));
 
@@ -971,7 +973,7 @@ public class ModelManipulationFactory {
                             Statement condEQnameStmt = modelEQ.getRequiredProperty(condEQ.getObject().asResource(), RDF.type);
                             String condEQname = condEQnameStmt.getObject().asResource().getLocalName();
                             if (condEQname.equals("PowerTransformer")) {
-                                for (StmtIterator pt = modelEQ.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "PowerTransformerEnd.PowerTransformer"), condEQ.getObject())); pt.hasNext(); ) { // loop on all classes
+                                for (StmtIterator pt = modelEQ.listStatements(null, ResourceFactory.createProperty(cim16NS, "PowerTransformerEnd.PowerTransformer"), condEQ.getObject()); pt.hasNext(); ) { // loop on all classes
                                     Statement stmtPT = pt.next();
                                     RDFNode endTerminal = modelEQ.getRequiredProperty(stmtPT.getSubject(), ResourceFactory.createProperty(cim16NS, "TransformerEnd.Terminal")).getObject();
                                     if (endTerminal.asResource().getLocalName().equals(stmtC.getSubject().getLocalName())) {
@@ -982,7 +984,7 @@ public class ModelManipulationFactory {
                             } else {
                                 int count = 1;
                                 for (Statement st : terminals) {
-                                    if (!convEQModel.listStatements(new SimpleSelector(st.getSubject(), ResourceFactory.createProperty(cim17NS, "ACDCTerminal.sequenceNumber"), (RDFNode) null)).hasNext()) {
+                                    if (!convEQModel.listStatements(st.getSubject(), ResourceFactory.createProperty(cim17NS, "ACDCTerminal.sequenceNumber"), (RDFNode) null).hasNext()) {
                                         convEQModel.add(rebaseResource(stmtC.getSubject(), cim17NS), ResourceFactory.createProperty(cim17NS, "ACDCTerminal.sequenceNumber"), ResourceFactory.createPlainLiteral(Integer.toString(count)));
                                     }
                                     count = count + 1;
@@ -1012,7 +1014,7 @@ public class ModelManipulationFactory {
         //fix RegulatingControl targers - voltage
         if (fixRegCont == 1) {
             List<Resource> processedRC = new LinkedList<>();
-            for (StmtIterator rc = convEQModel.listStatements(new SimpleSelector(null, RDF.type, ResourceFactory.createProperty(cim17NS,"RegulatingControl"))); rc.hasNext(); ) { // loop on RegulatingControl classes
+            for (StmtIterator rc = convEQModel.listStatements(null, RDF.type, ResourceFactory.createProperty(cim17NS,"RegulatingControl")); rc.hasNext(); ) { // loop on RegulatingControl classes
                 Statement stmtRC = rc.next();
                 if (processedRC.isEmpty() || !processedRC.contains(stmtRC.getSubject())) {
                     List<Resource> relatedRegCont = new LinkedList<>();
@@ -1028,20 +1030,20 @@ public class ModelManipulationFactory {
 
                             // check for other Regulating controls related to this TN
                             List<Resource> relatedRegContTemp = null;
-                            List<Float> controltargetTemp = null;
-                            for (StmtIterator tntp = convTPModel.listStatements(new SimpleSelector(null, RDF.type, ResourceFactory.createProperty(cim17NS,"TopologicalNode"))); tntp.hasNext(); ) { // loop on TopologicalNode classes
+                            List<Float> controltargetTemp;
+                            for (StmtIterator tntp = convTPModel.listStatements(null, RDF.type, ResourceFactory.createProperty(cim17NS,"TopologicalNode")); tntp.hasNext(); ) { // loop on TopologicalNode classes
                                 Statement stmtTN = tntp.next();
                                 relatedRegContTemp = new LinkedList<>();
                                 controltargetTemp = new LinkedList<>();
                                 //loop on all CN that connect to this TN
-                                for (StmtIterator cn = convTPModel.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim17NS,"ConnectivityNode.TopologicalNode"), stmtTN.getSubject())); cn.hasNext(); ) { // loop on CN
+                                for (StmtIterator cn = convTPModel.listStatements(null, ResourceFactory.createProperty(cim17NS,"ConnectivityNode.TopologicalNode"), stmtTN.getSubject()); cn.hasNext(); ) { // loop on CN
                                     Statement stmtCN = cn.next();
                                     //loop on all terminals that connect to this TN
-                                    for (StmtIterator term = convEQModel.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim17NS,"Terminal.ConnectivityNode"), stmtCN.getSubject())); term.hasNext(); ) { // loop on Terminals
+                                    for (StmtIterator term = convEQModel.listStatements(null, ResourceFactory.createProperty(cim17NS,"Terminal.ConnectivityNode"), stmtCN.getSubject()); term.hasNext(); ) { // loop on Terminals
                                         Statement stmterm = term.next();
                                         //for each of Terminals that relate to the TN
                                         //then get the enabled Reg controls that are with mode voltage,
-                                        for (StmtIterator rc1 = convEQModel.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim17NS,"RegulatingControl.Terminal"), stmterm.getSubject())); rc1.hasNext(); ) { // loop on RC
+                                        for (StmtIterator rc1 = convEQModel.listStatements(null, ResourceFactory.createProperty(cim17NS,"RegulatingControl.Terminal"), stmterm.getSubject()); rc1.hasNext(); ) { // loop on RC
                                             Statement stmtRC1 = rc1.next();
                                             mode = convEQModel.getRequiredProperty(stmtRC1.getSubject(), ResourceFactory.createProperty(cim17NS, "RegulatingControl.mode")).getObject().asResource().getLocalName();
                                             if (mode.equals("RegulatingControlModeKind.voltage")) {
@@ -1192,7 +1194,7 @@ public class ModelManipulationFactory {
                 //add the header statements
                 Resource headerRes = ResourceFactory.createResource("urn:uuid:" + UUID.randomUUID());
                 newBoderModel.add(ResourceFactory.createStatement(headerRes, RDF.type, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#FullModel")));
-                for (StmtIterator n = instanceModelBD.listStatements(new SimpleSelector(instanceModelBD.listSubjectsWithProperty(RDF.type, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#FullModel")).nextResource(), null, (RDFNode) null)); n.hasNext(); ) {
+                for (StmtIterator n = instanceModelBD.listStatements(instanceModelBD.listSubjectsWithProperty(RDF.type, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#FullModel")).nextResource(), null, (RDFNode) null); n.hasNext(); ) {
                     Statement stmt = n.next();
                     newBoderModel.add(ResourceFactory.createStatement(headerRes, stmt.getPredicate(), stmt.getObject()));
                 }
@@ -1538,12 +1540,12 @@ public class ModelManipulationFactory {
         Property mrid = ResourceFactory.createProperty("http://iec.ch/TC57/CIM100#IdentifiedObject.mRID");
 
 
-        for (StmtIterator i = instanceModelBD.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); i.hasNext(); ) { // loop on all classes
+        for (StmtIterator i = instanceModelBD.listStatements(null, RDF.type, (RDFNode) null); i.hasNext(); ) { // loop on all classes
             Statement stmt = i.next();
 
             //add the header statements
             if (stmt.getObject().asResource().getLocalName().equals("FullModel")) {
-                for (StmtIterator n = instanceModelBD.listStatements(new SimpleSelector(stmt.getSubject(), null, (RDFNode) null)); n.hasNext(); ) {
+                for (StmtIterator n = instanceModelBD.listStatements(stmt.getSubject(), null, (RDFNode) null); n.hasNext(); ) {
                     Statement stmtH = n.next();
                     if (stmtH.getPredicate().getLocalName().equals("Model.profile")) {
                         newBoderModel.add(ResourceFactory.createStatement(stmtH.getSubject(), stmtH.getPredicate(), ResourceFactory.createPlainLiteral("http://iec.ch/TC57/ns/CIM/EquipmentBoundary-EU/3.0")));
@@ -1570,19 +1572,19 @@ public class ModelManipulationFactory {
                 if (!stmt.getObject().asResource().getLocalName().equals("Junction") && !stmt.getObject().asResource().getLocalName().equals("Terminal")) {// this is to filter Junction and Terminal. TODO create option in GUT to make this more flexible
                     //Add Terminal.ConnectivityNode
                     if (stmt.getObject().asResource().getLocalName().equals("Junction")) {
-                        Statement EqCont = instanceModelBD.listStatements(new SimpleSelector(stmt.getSubject(), ResourceFactory.createProperty(cim16NS, "Equipment.EquipmentContainer"), (RDFNode) null)).next();
-                        Statement conNode = instanceModelBD.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "ConnectivityNode.ConnectivityNodeContainer"), EqCont.getObject())).next();
-                        Statement terminalJunction = instanceModelBD.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cim16NS, "Terminal.ConductingEquipment"), stmt.getSubject())).next();
-                        if (!instanceModelBD.listStatements(new SimpleSelector(terminalJunction.getSubject(), ResourceFactory.createProperty(cim16NS, "Terminal.ConnectivityNode"), conNode.getSubject())).hasNext()) {
+                        Statement EqCont = instanceModelBD.listStatements(stmt.getSubject(), ResourceFactory.createProperty(cim16NS, "Equipment.EquipmentContainer"), (RDFNode) null).next();
+                        Statement conNode = instanceModelBD.listStatements(null, ResourceFactory.createProperty(cim16NS, "ConnectivityNode.ConnectivityNodeContainer"), EqCont.getObject()).next();
+                        Statement terminalJunction = instanceModelBD.listStatements(null, ResourceFactory.createProperty(cim16NS, "Terminal.ConductingEquipment"), stmt.getSubject()).next();
+                        if (!instanceModelBD.listStatements(terminalJunction.getSubject(), ResourceFactory.createProperty(cim16NS, "Terminal.ConnectivityNode"), conNode.getSubject()).hasNext()) {
                             newBoderModel.add(terminalJunction.getSubject(), ResourceFactory.createProperty(cim17NS, "Terminal.ConnectivityNode"), conNode.getSubject());
                         }
-                        if (!instanceModelBD.listStatements(new SimpleSelector(terminalJunction.getSubject(), ResourceFactory.createProperty(cim16NS, "ACDCTerminal.sequenceNumber"), (RDFNode) null)).hasNext()) {
+                        if (!instanceModelBD.listStatements(terminalJunction.getSubject(), ResourceFactory.createProperty(cim16NS, "ACDCTerminal.sequenceNumber"), (RDFNode) null).hasNext()) {
                             newBoderModel.add(terminalJunction.getSubject(), ResourceFactory.createProperty(cim17NS, "ACDCTerminal.sequenceNumber"), ResourceFactory.createPlainLiteral("1"));
                         }
                     }
                     int addmrid = 1;
 
-                    for (StmtIterator a = instanceModelBD.listStatements(new SimpleSelector(stmt.getSubject(), null, (RDFNode) null)); a.hasNext(); ) { // loop on all attributes
+                    for (StmtIterator a = instanceModelBD.listStatements(stmt.getSubject(), null, (RDFNode) null); a.hasNext(); ) { // loop on all attributes
                         Statement stmtA = a.next();
                         if (!skipList.contains(stmtA.getPredicate().getLocalName())) {
                             if (stmtA.getSubject().getNameSpace().equals("http://iec.ch/TC57/2013/CIM-schema-cim16#")) {
@@ -1683,14 +1685,14 @@ public class ModelManipulationFactory {
         List<Statement> StmtDeleteList = new LinkedList<>();
         int deleteClass;
         if (keepExtensions == 0) {
-            for (StmtIterator i = newBoderModel.listStatements(new SimpleSelector(null, RDF.type, (RDFNode) null)); i.hasNext(); ) { // loop on all classes
+            for (StmtIterator i = newBoderModel.listStatements(null, RDF.type, (RDFNode) null); i.hasNext(); ) { // loop on all classes
                 Statement stmt = i.next();
                 deleteClass = 0;
                 if (stmt.getObject().asResource().getNameSpace().equals("http://entsoe.eu/CIM/Extensions/CGM-BP/2020#")) {
                     StmtDeleteList.add(stmt);
                     deleteClass = 1;
                 }
-                for (StmtIterator a = newBoderModel.listStatements(new SimpleSelector(stmt.getSubject(), null, (RDFNode) null)); a.hasNext(); ) { // loop on all attributes
+                for (StmtIterator a = newBoderModel.listStatements(stmt.getSubject(), null, (RDFNode) null); a.hasNext(); ) { // loop on all attributes
                     Statement stmtA = a.next();
                     if (deleteClass == 1) {
                         StmtDeleteList.add(stmtA);
@@ -1717,17 +1719,17 @@ public class ModelManipulationFactory {
 
     //add BP
     private static Model addBP(Model modelSource, Model newModel, Resource resItem) {
-        for (StmtIterator bp = modelSource.listStatements(new SimpleSelector(resItem, null, (RDFNode) null)); bp.hasNext(); ) {
+        for (StmtIterator bp = modelSource.listStatements(resItem, null, (RDFNode) null); bp.hasNext(); ) {
             Statement stmt = bp.next();
             newModel.add(stmt);
             // Add ConnectivityNode
             if (stmt.getPredicate().asResource().getLocalName().equals("BoundaryPoint.ConnectivityNode")) {
-                for (StmtIterator cn = modelSource.listStatements(new SimpleSelector(stmt.getObject().asResource(), null, (RDFNode) null)); cn.hasNext(); ) {
+                for (StmtIterator cn = modelSource.listStatements(stmt.getObject().asResource(), null, (RDFNode) null); cn.hasNext(); ) {
                     Statement stmtcn = cn.next();
                     newModel.add(stmtcn);
                     //Add Line container
                     if (stmtcn.getPredicate().asResource().getLocalName().equals("ConnectivityNode.ConnectivityNodeContainer")) {
-                        for (StmtIterator con = modelSource.listStatements(new SimpleSelector(stmtcn.getObject().asResource(), null, (RDFNode) null)); con.hasNext(); ) {
+                        for (StmtIterator con = modelSource.listStatements(stmtcn.getObject().asResource(), null, (RDFNode) null); con.hasNext(); ) {
                             Statement stmtcon = con.next();
                             newModel.add(stmtcon);
                         }
@@ -2017,6 +2019,56 @@ public class ModelManipulationFactory {
             cimns = "http://iec.ch/TC57/2013/CIM-schema-cim16#";
         }
 
+        Map<String,List> expMapToXls = new HashMap<>();
+        if (expMap) {
+            List Element_type = new ArrayList<>();
+            List Element_ID = new ArrayList<>();
+            List ConnectivityNode_1_ID = new ArrayList<>();
+            List ConnectivityNode_2_ID = new ArrayList<>();
+            List ConnectivityNode_3_ID = new ArrayList<>();
+            List ConnectivityNode_4_ID = new ArrayList<>();
+            List ConnectivityNode_5_ID = new ArrayList<>();
+            List ConnectivityNode_6_ID = new ArrayList<>();
+            List TopologicalNode_1_ID = new ArrayList<>();
+            List TopologicalNode_2_ID = new ArrayList<>();
+            List TopologicalNode_3_ID = new ArrayList<>();
+            List TopologicalNode_4_ID = new ArrayList<>();
+            List TopologicalNode_5_ID = new ArrayList<>();
+            List TopologicalNode_6_ID = new ArrayList<>();
+            List Breaker_1_ID = new ArrayList<>();
+            List Breaker_1_Terminal_1_ID = new ArrayList<>();
+            List Breaker_1_Terminal_2_ID = new ArrayList<>();
+            List Breaker_2_ID = new ArrayList<>();
+            List Breaker_2_ID_Terminal_1_ID = new ArrayList<>();
+            List Breaker_2_ID_Terminal_2_ID = new ArrayList<>();
+            List Breaker_3_ID = new ArrayList<>();
+            List Breaker_3_ID_Terminal_1_ID = new ArrayList<>();
+            List Breaker_3_ID_Terminal_2_ID = new ArrayList<>();
+            expMapToXls.put("Element_type",Element_type);
+            expMapToXls.put("Element_ID",Element_ID);
+            expMapToXls.put("ConnectivityNode_1_ID",ConnectivityNode_1_ID);
+            expMapToXls.put("ConnectivityNode_2_ID",ConnectivityNode_2_ID);
+            expMapToXls.put("ConnectivityNode_3_ID",ConnectivityNode_3_ID);
+            expMapToXls.put("ConnectivityNode_4_ID",ConnectivityNode_4_ID);
+            expMapToXls.put("ConnectivityNode_5_ID",ConnectivityNode_5_ID);
+            expMapToXls.put("ConnectivityNode_6_ID",ConnectivityNode_6_ID);
+            expMapToXls.put("TopologicalNode_1_ID",TopologicalNode_1_ID);
+            expMapToXls.put("TopologicalNode_2_ID",TopologicalNode_2_ID);
+            expMapToXls.put("TopologicalNode_3_ID",TopologicalNode_3_ID);
+            expMapToXls.put("TopologicalNode_4_ID",TopologicalNode_4_ID);
+            expMapToXls.put("TopologicalNode_5_ID",TopologicalNode_5_ID);
+            expMapToXls.put("TopologicalNode_6_ID",TopologicalNode_6_ID);
+            expMapToXls.put("Breaker_1_ID",Breaker_1_ID);
+            expMapToXls.put("Breaker_1_Terminal_1_ID",Breaker_1_Terminal_1_ID);
+            expMapToXls.put("Breaker_1_Terminal_2_ID",Breaker_1_Terminal_2_ID);
+            expMapToXls.put("Breaker_2_ID",Breaker_2_ID);
+            expMapToXls.put("Breaker_2_ID_Terminal_1_ID",Breaker_2_ID_Terminal_1_ID);
+            expMapToXls.put("Breaker_2_ID_Terminal_2_ID",Breaker_2_ID_Terminal_2_ID);
+            expMapToXls.put("Breaker_3_ID",Breaker_3_ID);
+            expMapToXls.put("Breaker_3_ID_Terminal_1_ID",Breaker_3_ID_Terminal_1_ID);
+            expMapToXls.put("Breaker_3_ID_Terminal_2_ID",Breaker_3_ID_Terminal_2_ID);
+        }
+
         //set properties for the export
 
         Map<String, Object> saveProperties = new HashMap<>();
@@ -2091,21 +2143,21 @@ public class ModelManipulationFactory {
         if (applyLine){
             //find all ACLineSegments
             //for each of the line segments add 2 breakers
-            for (StmtIterator s = modEQModel.listStatements(new SimpleSelector(null,RDF.type,ResourceFactory.createProperty(cimns,"ACLineSegment"))); s.hasNext();){
+            for (StmtIterator s = modEQModel.listStatements(null,RDF.type,ResourceFactory.createProperty(cimns,"ACLineSegment")); s.hasNext();){
                 Statement stmt = s.next();
                 //check if there is Line container. If yes, do a check if there are Lines with more than 1 segment and issue a warning
                 // if not process the line segments
 
                 // get the ID of the Line if there is a line
-                if (modEQModel.listStatements(new SimpleSelector(stmt.getSubject(),ResourceFactory.createProperty(cimns,"Equipment.EquipmentContainer"),(RDFNode) null)).hasNext()) {
-                    Statement LineStmt = modEQModel.listStatements(new SimpleSelector(stmt.getSubject(), ResourceFactory.createProperty(cimns, "Equipment.EquipmentContainer"), (RDFNode) null)).next();
-                    List<Statement> LineList = modEQModel.listStatements(new SimpleSelector(null,ResourceFactory.createProperty(cimns,"Equipment.EquipmentContainer"),LineStmt.getSubject())).toList();
+                if (modEQModel.listStatements(stmt.getSubject(),ResourceFactory.createProperty(cimns,"Equipment.EquipmentContainer"),(RDFNode) null).hasNext()) {
+                    Statement LineStmt = modEQModel.listStatements(stmt.getSubject(), ResourceFactory.createProperty(cimns, "Equipment.EquipmentContainer"), (RDFNode) null).next();
+                    List<Statement> LineList = modEQModel.listStatements(null,ResourceFactory.createProperty(cimns,"Equipment.EquipmentContainer"),LineStmt.getSubject()).toList();
                     if (LineList.size()>1){
                         //TODO not supported case, todo the warning
                         //more than one segment in a Line - print warning
                     } else {
                         // do the routine for cases when there is one ACLineSegment in a Line
-                        Map<String,Object> breakerLineMap = AddBreakerLine(LineList,modelEQ,modelTP,modelSV,modelSSH,modEQModel,modSSHModel, modSVModel,modTPModel,cimns,cgmesVersion, modelTPBD);
+                        Map<String,Object> breakerLineMap = AddBreakerLine(LineList,modelEQ,modelTP,modelSV,modelSSH,modEQModel,modSSHModel, modSVModel,modTPModel,cimns,cgmesVersion, modelTPBD,expMapToXls,expMap);
                         modEQModel = (Model) breakerLineMap.get("modEQModel");
                         modTPModel = (Model) breakerLineMap.get("modTPModel");
                         modSVModel = (Model) breakerLineMap.get("modSVModel");
@@ -2115,7 +2167,7 @@ public class ModelManipulationFactory {
                     //this is the case where there is no Line container for a given ACLineSegment
                     List<Statement> LineList = new LinkedList<>();
                     LineList.add(stmt);
-                    Map<String,Object> breakerLineMap = AddBreakerLine(LineList,modelEQ,modelTP,modelSV,modelSSH,modEQModel,modSSHModel, modSVModel,modTPModel,cimns,cgmesVersion, modelTPBD);
+                    Map<String,Object> breakerLineMap = AddBreakerLine(LineList,modelEQ,modelTP,modelSV,modelSSH,modEQModel,modSSHModel, modSVModel,modTPModel,cimns,cgmesVersion, modelTPBD,expMapToXls,expMap);
                     modEQModel = (Model) breakerLineMap.get("modEQModel");
                     modTPModel = (Model) breakerLineMap.get("modTPModel");
                     modSVModel = (Model) breakerLineMap.get("modSVModel");
@@ -2133,6 +2185,9 @@ public class ModelManipulationFactory {
 
         //save
         saveInstanceModelData(modifiedModelMap, saveProperties, loadDataMap.get("profileModelMap"));
+        if (expMap){
+            exportMapping(expMapToXls);
+        }
 
 
 
@@ -2146,7 +2201,7 @@ public class ModelManipulationFactory {
 
     //Get element terminals
     public static List<Statement> GetElementTerminals(Model model, Statement elementStmt,String cimns) {
-        return model.listStatements(new SimpleSelector(null,ResourceFactory.createProperty(cimns,"Terminal.ConductingEquipment"),elementStmt.getSubject())).toList();
+        return model.listStatements(null,ResourceFactory.createProperty(cimns,"Terminal.ConductingEquipment"),elementStmt.getSubject()).toList();
     }
 
     //Get element ConnectivityNodes (CN are the objects of the statements)
@@ -2154,8 +2209,8 @@ public class ModelManipulationFactory {
         List<Statement> cnList = new LinkedList<>();
 
         for (Statement term : terminalsStmt){
-            if (model.listStatements(new SimpleSelector(term.getSubject(),ResourceFactory.createProperty(cimns,"Terminal.ConnectivityNode"),(RDFNode) null)).hasNext()) {
-                Statement cnStmt = model.listStatements(new SimpleSelector(term.getSubject(), ResourceFactory.createProperty(cimns, "Terminal.ConnectivityNode"), (RDFNode) null)).next();
+            if (model.listStatements(term.getSubject(),ResourceFactory.createProperty(cimns,"Terminal.ConnectivityNode"),(RDFNode) null).hasNext()) {
+                Statement cnStmt = model.listStatements(term.getSubject(), ResourceFactory.createProperty(cimns, "Terminal.ConnectivityNode"), (RDFNode) null).next();
                 cnList.add(cnStmt);
             }
         }
@@ -2170,15 +2225,15 @@ public class ModelManipulationFactory {
 
         if (cnList.isEmpty()) {
             for (Statement term : terminalsStmt) {
-                if (model.listStatements(new SimpleSelector(term.getSubject(), ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode"), (RDFNode) null)).hasNext()){
-                    Statement tnStmt = model.listStatements(new SimpleSelector(term.getSubject(), ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode"), (RDFNode) null)).next();
+                if (model.listStatements(term.getSubject(), ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode"), (RDFNode) null).hasNext()){
+                    Statement tnStmt = model.listStatements(term.getSubject(), ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode"), (RDFNode) null).next();
                     tnList.add(tnStmt);
                 }
             }
         }else{
             for (Statement cn : cnList) {
-                if (model.listStatements(new SimpleSelector(cn.getObject().asResource(), ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode"), (RDFNode) null)).hasNext()){
-                    Statement tnStmt = model.listStatements(new SimpleSelector(cn.getObject().asResource(), ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode"), (RDFNode) null)).next();
+                if (model.listStatements(cn.getObject().asResource(), ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode"), (RDFNode) null).hasNext()){
+                    Statement tnStmt = model.listStatements(cn.getObject().asResource(), ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode"), (RDFNode) null).next();
                     tnList.add(tnStmt);
                 }
             }
@@ -2190,7 +2245,7 @@ public class ModelManipulationFactory {
     public static List<Statement> GetTerminalsTopologicalNodeMinus1(Model modelTP, Statement tnode, String cimns, Statement removeTerm) {
         List<Statement> termList = new LinkedList<>();
 
-        for (StmtIterator t = modelTP.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode"), tnode.getObject())); t.hasNext(); ) { // loop on TN classes
+        for (StmtIterator t = modelTP.listStatements(null, ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode"), tnode.getObject()); t.hasNext(); ) { // loop on TN classes
             Statement stmtT = t.next();
             if (!stmtT.getSubject().equals(removeTerm.getSubject())){
                 termList.add(stmtT);
@@ -2205,7 +2260,7 @@ public class ModelManipulationFactory {
         //TODO have support for the open ended equipment.
         //assumes that we do not have open ended branches
         for (Statement term : terminalsStmt) {
-            Statement tnStmt = modelSSH.listStatements(new SimpleSelector(term.getSubject(), ResourceFactory.createProperty(cimns, "ACDCTerminal.connected"), (RDFNode) null)).next();
+            Statement tnStmt = modelSSH.listStatements(term.getSubject(), ResourceFactory.createProperty(cimns, "ACDCTerminal.connected"), (RDFNode) null).next();
             if (!tnStmt.getObject().asLiteral().getBoolean()) {
                 breakerStatus = false;
                 break;
@@ -2252,6 +2307,7 @@ public class ModelManipulationFactory {
         Map<String,Object> breakerMap = new HashMap<>();
         breakerMap.put("resourceTerm1",term1Res);
         breakerMap.put("resourceTerm2",term2Res);
+        breakerMap.put("breakerRes",breakerRes);
         breakerMap.put("modelEQ",modelEQ);
         breakerMap.put("modelSSH",modelSSH);
         breakerMap.put("modelSV",modelSV);
@@ -2259,16 +2315,17 @@ public class ModelManipulationFactory {
     }
 
     //Add Breaker on a line
-    public static Map<String,Object> AddBreakerLine(List<Statement> LineList,Model modelEQ, Model modelTP, Model modelSV,Model modelSSH,Model modEQModel,Model modSSHModel, Model modSVModel, Model modTPModel,String cimns, String cgmesVersion, Model modelTPBD) {
+    public static Map<String,Object> AddBreakerLine(List<Statement> LineList,Model modelEQ, Model modelTP, Model modelSV,Model modelSSH,Model modEQModel,Model modSSHModel, Model modSVModel, Model modTPModel,String cimns, String cgmesVersion, Model modelTPBD,Map<String,List> expMapToXls, boolean expMap) {
+
         // add breakers
         List<Statement> lineTerminals = GetElementTerminals(modelEQ,LineList.get(0),cimns);
         List<Statement> lineCN = GetElementConnectivityNodes(modelEQ, lineTerminals, cimns);
         List<Statement> lineTN= GetElementTopologicalNodes(modelTP, lineTerminals, lineCN, cimns);
         Statement island;
-        if (modelSV.listStatements(new SimpleSelector(null,ResourceFactory.createProperty(cimns,"TopologicalIsland.TopologicalNodes"),lineTN.get(0).getObject())).hasNext()) {
-            island = modelSV.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cimns, "TopologicalIsland.TopologicalNodes"), lineTN.get(0).getObject())).next();
+        if (modelSV.listStatements(null,ResourceFactory.createProperty(cimns,"TopologicalIsland.TopologicalNodes"),lineTN.get(0).getObject()).hasNext()) {
+            island = modelSV.listStatements(null, ResourceFactory.createProperty(cimns, "TopologicalIsland.TopologicalNodes"), lineTN.get(0).getObject()).next();
         }else{
-            island = modelSV.listStatements(new SimpleSelector(null, RDF.type,ResourceFactory.createProperty(cimns, "TopologicalIsland"))).next();
+            island = modelSV.listStatements(null, RDF.type,ResourceFactory.createProperty(cimns, "TopologicalIsland")).next();
         }
         //logic for the breaker status - if true the line is in operation, if false it is disconnected
         // if it is connected - no need to create TN, just CN; if not connected TN is needed
@@ -2280,6 +2337,7 @@ public class ModelManipulationFactory {
         Map<String,Object> breaker1Map = AddBreaker(modEQModel, modSSHModel, modSVModel, cimns, breakerStatus, cgmesVersion);
         Resource resBreakerTerm1 = (Resource) breaker1Map.get("resourceTerm1");
         Resource resBreakerTerm2 = (Resource) breaker1Map.get("resourceTerm2");
+        Resource resBreaker1 = (Resource) breaker1Map.get("breakerRes");
         modEQModel = (Model) breaker1Map.get("modelEQ");
         modSSHModel = (Model) breaker1Map.get("modelSSH");
         modSVModel = (Model) breaker1Map.get("modelSV");
@@ -2290,29 +2348,34 @@ public class ModelManipulationFactory {
             //create 2 CN
             if (breakerStatus){ //no TN
                 //add for TN 1, side 1
-                breaker1ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreakerTerm1, resBreakerTerm2, cgmesVersion, island, false, false, 0, true, modelTPBD);
+                breaker1ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreakerTerm1, resBreakerTerm2, cgmesVersion, island, false, false, 0, true, modelTPBD,lineCN);
             }else{//create 1 TN and 2 CN
                 //add for TN 1, side 1
-                breaker1ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreakerTerm1, resBreakerTerm2, cgmesVersion, island, false, true, 0, true, modelTPBD);
+                breaker1ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreakerTerm1, resBreakerTerm2, cgmesVersion, island, false, true, 0, true, modelTPBD,lineCN);
             }
         }else{// there is CN
             //create 1 CN
             if (breakerStatus){ // no TN
                 //add for TN 1, side 1
-                breaker1ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreakerTerm1, resBreakerTerm2, cgmesVersion, island, false, false, 0, false, modelTPBD);
+                breaker1ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreakerTerm1, resBreakerTerm2, cgmesVersion, island, false, false, 0, false, modelTPBD,lineCN);
             }else{// create 1 CN and 1 TN
                 //add for TN 1, side 1
-                breaker1ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreakerTerm1, resBreakerTerm2, cgmesVersion, island, false, true, 0, false, modelTPBD);
+                breaker1ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreakerTerm1, resBreakerTerm2, cgmesVersion, island, false, true, 0, false, modelTPBD,lineCN);
             }
         }
         modEQModel = (Model) breaker1ConMap.get("modEQModel");
         modTPModel = (Model) breaker1ConMap.get("modTPModel");
         modSVModel = (Model) breaker1ConMap.get("modSVModel");
+        Resource cn1resBreaker1 = (Resource) breaker1ConMap.get("cn1res");
+        Resource tn1resBreaker1 = (Resource) breaker1ConMap.get("tn1res");
+        Resource cn2resBreaker1 = (Resource) breaker1ConMap.get("cn2res");
+        Resource tn2resBreaker1 = (Resource) breaker1ConMap.get("tn2res");
 
         //add breaker 2
         Map<String,Object> breaker2Map = AddBreaker(modEQModel, modSSHModel, modSVModel, cimns, breakerStatus, cgmesVersion);
         Resource resBreaker2Term1 = (Resource) breaker2Map.get("resourceTerm1");
         Resource resBreaker2Term2 = (Resource) breaker2Map.get("resourceTerm2");
+        Resource resBreaker2 = (Resource) breaker2Map.get("breakerRes");
         modEQModel = (Model) breaker2Map.get("modelEQ");
         modSSHModel = (Model) breaker2Map.get("modelSSH");
         modSVModel = (Model) breaker2Map.get("modelSV");
@@ -2320,25 +2383,105 @@ public class ModelManipulationFactory {
             //create 2 CN
             if (breakerStatus){ //no TN
                 //add for TN 2, side 2
-                breaker2ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreaker2Term1, resBreaker2Term2, cgmesVersion, island, false, false, 1, true, modelTPBD);
+                breaker2ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreaker2Term1, resBreaker2Term2, cgmesVersion, island, false, false, 1, true, modelTPBD,lineCN);
 
             }else{//create 1 TN and 2 CN
                 //add for TN 2, side 2
-                breaker2ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreaker2Term1, resBreaker2Term2, cgmesVersion, island, false, true, 1, true, modelTPBD);
+                breaker2ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreaker2Term1, resBreaker2Term2, cgmesVersion, island, false, true, 1, true, modelTPBD,lineCN);
             }
         }else{// there is CN
             //create 1 CN
             if (breakerStatus){ // no TN
                 //add for TN 2, side 2
-                breaker2ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreaker2Term1, resBreaker2Term2, cgmesVersion, island, false, false, 1, false, modelTPBD);
+                breaker2ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreaker2Term1, resBreaker2Term2, cgmesVersion, island, false, false, 1, false, modelTPBD,lineCN);
             }else{// create 1 CN and 1 TN
                 //add for TN 2, side 2
-                breaker2ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreaker2Term1, resBreaker2Term2, cgmesVersion, island, false, true, 1, false, modelTPBD);
+                breaker2ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, lineTN, cimns, lineTerminals, resBreaker2Term1, resBreaker2Term2, cgmesVersion, island, false, true, 1, false, modelTPBD,lineCN);
             }
         }
         modEQModel = (Model) breaker2ConMap.get("modEQModel");
         modTPModel = (Model) breaker2ConMap.get("modTPModel");
         modSVModel = (Model) breaker2ConMap.get("modSVModel");
+        Resource cn1resBreaker2 = (Resource) breaker2ConMap.get("cn1res");
+        Resource tn1resBreaker2 = (Resource) breaker2ConMap.get("tn1res");
+        Resource cn2resBreaker2 = (Resource) breaker2ConMap.get("cn2res");
+        Resource tn2resBreaker2 = (Resource) breaker2ConMap.get("tn2res");
+
+        if (expMap) {
+            List Element_type = expMapToXls.get("Element_type");
+            List Element_ID = expMapToXls.get("Element_ID");
+            List ConnectivityNode_1_ID = expMapToXls.get("ConnectivityNode_1_ID");
+            List ConnectivityNode_2_ID = expMapToXls.get("ConnectivityNode_2_ID");
+            List ConnectivityNode_3_ID = expMapToXls.get("ConnectivityNode_3_ID");
+            List ConnectivityNode_4_ID = expMapToXls.get("ConnectivityNode_4_ID");
+            List ConnectivityNode_5_ID = expMapToXls.get("ConnectivityNode_5_ID");
+            List ConnectivityNode_6_ID = expMapToXls.get("ConnectivityNode_6_ID");
+            List TopologicalNode_1_ID = expMapToXls.get("TopologicalNode_1_ID");
+            List TopologicalNode_2_ID = expMapToXls.get("TopologicalNode_2_ID");
+            List TopologicalNode_3_ID = expMapToXls.get("TopologicalNode_3_ID");
+            List TopologicalNode_4_ID = expMapToXls.get("TopologicalNode_4_ID");
+            List TopologicalNode_5_ID = expMapToXls.get("TopologicalNode_5_ID");
+            List TopologicalNode_6_ID = expMapToXls.get("TopologicalNode_6_ID");
+            List Breaker_1_ID = expMapToXls.get("Breaker_1_ID");
+            List Breaker_1_Terminal_1_ID = expMapToXls.get("Breaker_1_Terminal_1_ID");
+            List Breaker_1_Terminal_2_ID = expMapToXls.get("Breaker_1_Terminal_2_ID");
+            List Breaker_2_ID = expMapToXls.get("Breaker_2_ID");
+            List Breaker_2_ID_Terminal_1_ID = expMapToXls.get("Breaker_2_ID_Terminal_1_ID");
+            List Breaker_2_ID_Terminal_2_ID = expMapToXls.get("Breaker_2_ID_Terminal_2_ID");
+            List Breaker_3_ID = expMapToXls.get("Breaker_3_ID");
+            List Breaker_3_ID_Terminal_1_ID = expMapToXls.get("Breaker_3_ID_Terminal_1_ID");
+            List Breaker_3_ID_Terminal_2_ID = expMapToXls.get("Breaker_3_ID_Terminal_2_ID");
+
+
+            Element_type.add(LineList.get(0).getObject().asResource().getLocalName());
+            Element_ID.add(LineList.get(0).getSubject().getLocalName());
+            ConnectivityNode_1_ID.add(cn1resBreaker1.getLocalName());
+            ConnectivityNode_2_ID.add(cn2resBreaker1.getLocalName());
+            ConnectivityNode_3_ID.add(cn1resBreaker2.getLocalName());
+            ConnectivityNode_4_ID.add(cn2resBreaker2.getLocalName());
+            ConnectivityNode_5_ID.add("N/A");
+            ConnectivityNode_6_ID.add("N/A");
+            TopologicalNode_1_ID.add(tn1resBreaker1.getLocalName());
+            TopologicalNode_2_ID.add(tn2resBreaker1.getLocalName());
+            TopologicalNode_3_ID.add(tn1resBreaker2.getLocalName());
+            TopologicalNode_4_ID.add(tn2resBreaker2.getLocalName());
+            TopologicalNode_5_ID.add("N/A");
+            TopologicalNode_6_ID.add("N/A");
+            Breaker_1_ID.add(resBreaker1.getLocalName());
+            Breaker_1_Terminal_1_ID.add(resBreakerTerm1.getLocalName());
+            Breaker_1_Terminal_2_ID.add(resBreakerTerm2.getLocalName());
+            Breaker_2_ID.add(resBreaker2.getLocalName());
+            Breaker_2_ID_Terminal_1_ID.add(resBreaker2Term1.getLocalName());
+            Breaker_2_ID_Terminal_2_ID.add(resBreaker2Term2.getLocalName());
+            Breaker_3_ID.add("N/A");
+            Breaker_3_ID_Terminal_1_ID.add("N/A");
+            Breaker_3_ID_Terminal_2_ID.add("N/A");
+
+
+            expMapToXls.replace("Element_type",Element_type);
+            expMapToXls.replace("Element_ID",Element_ID);
+            expMapToXls.replace("ConnectivityNode_1_ID",ConnectivityNode_1_ID);
+            expMapToXls.replace("ConnectivityNode_2_ID",ConnectivityNode_2_ID);
+            expMapToXls.replace("ConnectivityNode_3_ID",ConnectivityNode_3_ID);
+            expMapToXls.replace("ConnectivityNode_4_ID",ConnectivityNode_4_ID);
+            expMapToXls.replace("ConnectivityNode_5_ID",ConnectivityNode_5_ID);
+            expMapToXls.replace("ConnectivityNode_6_ID",ConnectivityNode_6_ID);
+            expMapToXls.replace("TopologicalNode_1_ID",TopologicalNode_1_ID);
+            expMapToXls.replace("TopologicalNode_2_ID",TopologicalNode_2_ID);
+            expMapToXls.replace("TopologicalNode_3_ID",TopologicalNode_3_ID);
+            expMapToXls.replace("TopologicalNode_4_ID",TopologicalNode_4_ID);
+            expMapToXls.replace("TopologicalNode_5_ID",TopologicalNode_5_ID);
+            expMapToXls.replace("TopologicalNode_6_ID",TopologicalNode_6_ID);
+            expMapToXls.replace("Breaker_1_ID",Breaker_1_ID);
+            expMapToXls.replace("Breaker_1_Terminal_1_ID",Breaker_1_Terminal_1_ID);
+            expMapToXls.replace("Breaker_1_Terminal_2_ID",Breaker_1_Terminal_2_ID);
+            expMapToXls.replace("Breaker_2_ID",Breaker_2_ID);
+            expMapToXls.replace("Breaker_2_ID_Terminal_1_ID",Breaker_2_ID_Terminal_1_ID);
+            expMapToXls.replace("Breaker_2_ID_Terminal_2_ID",Breaker_2_ID_Terminal_2_ID);
+            expMapToXls.replace("Breaker_3_ID",Breaker_3_ID);
+            expMapToXls.replace("Breaker_3_ID_Terminal_1_ID",Breaker_3_ID_Terminal_1_ID);
+            expMapToXls.replace("Breaker_3_ID_Terminal_2_ID",Breaker_3_ID_Terminal_2_ID);
+        }
 
         Map<String,Object> breakerLineMap = new HashMap<>();
 
@@ -2346,13 +2489,14 @@ public class ModelManipulationFactory {
         breakerLineMap.put("modTPModel",modTPModel);
         breakerLineMap.put("modSVModel",modSVModel);
         breakerLineMap.put("modSSHModel",modSSHModel);
+        breakerLineMap.put("expMapToXls",expMapToXls);
         return breakerLineMap;
     }
 
     //Add ConnectivityNode
     public static Map<String,Object> AddConnectivityNode(Model modelEQ, Model modelTP, Model modelSV, String cimns, boolean cntn, String cgmesVersion, Statement island, Statement originTN, List<Statement> terminalsCN, Model modelTPBD) {
         //if cntn is true it adds CN and TN; if false - it adds CN only
-        Resource tnRes = null;
+        Resource tnRes;
         Property mrid = ResourceFactory.createProperty("http://iec.ch/TC57/CIM100#IdentifiedObject.mRID");
         Property ioname = ResourceFactory.createProperty(cimns,"IdentifiedObject.name");
         Property termToCN = ResourceFactory.createProperty(cimns,"Terminal.ConnectivityNode");
@@ -2367,10 +2511,10 @@ public class ModelManipulationFactory {
         modelEQ.add(ResourceFactory.createStatement(cnRes, ioname, ResourceFactory.createPlainLiteral("new node"))); // add a default name
         //System.out.print(originTN.getObject().asResource().toString());
         RDFNode tnContainer;
-        if (modelTP.listStatements(new SimpleSelector(originTN.getObject().asResource(),ResourceFactory.createProperty(cimns,"TopologicalNode.ConnectivityNodeContainer"),(RDFNode) null)).hasNext()) {
-            tnContainer = modelTP.listStatements(new SimpleSelector(originTN.getObject().asResource(), ResourceFactory.createProperty(cimns, "TopologicalNode.ConnectivityNodeContainer"), (RDFNode) null)).next().getObject();
-        }else if (modelTPBD.listStatements(new SimpleSelector(originTN.getObject().asResource(),ResourceFactory.createProperty(cimns,"TopologicalNode.ConnectivityNodeContainer"),(RDFNode) null)).hasNext()){
-            tnContainer = modelTPBD.listStatements(new SimpleSelector(originTN.getObject().asResource(), ResourceFactory.createProperty(cimns, "TopologicalNode.ConnectivityNodeContainer"), (RDFNode) null)).next().getObject();
+        if (modelTP.listStatements(originTN.getObject().asResource(),ResourceFactory.createProperty(cimns,"TopologicalNode.ConnectivityNodeContainer"),(RDFNode) null).hasNext()) {
+            tnContainer = modelTP.listStatements(originTN.getObject().asResource(), ResourceFactory.createProperty(cimns, "TopologicalNode.ConnectivityNodeContainer"), (RDFNode) null).next().getObject();
+        }else if (modelTPBD.listStatements(originTN.getObject().asResource(),ResourceFactory.createProperty(cimns,"TopologicalNode.ConnectivityNodeContainer"),(RDFNode) null).hasNext()){
+            tnContainer = modelTPBD.listStatements(originTN.getObject().asResource(), ResourceFactory.createProperty(cimns, "TopologicalNode.ConnectivityNodeContainer"), (RDFNode) null).next().getObject();
         }else{
             tnContainer=ResourceFactory.createProperty(cimns, "_NoContainer");
             //TODO issue warning
@@ -2393,6 +2537,7 @@ public class ModelManipulationFactory {
             modelTP.add(ResourceFactory.createStatement(cnRes, ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode"), ResourceFactory.createProperty(tnRes.toString())));
         }else{
             modelTP.add(ResourceFactory.createStatement(cnRes, ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode"), ResourceFactory.createProperty(originTN.getSubject().toString())));
+            tnRes=originTN.getSubject();
         }
 
         Map<String,Object> cnMap = new HashMap<>();
@@ -2422,7 +2567,7 @@ public class ModelManipulationFactory {
         modelTP.add(ResourceFactory.createStatement(tnRes, ioname, ResourceFactory.createPlainLiteral(modelEQ.getRequiredProperty(cnRes,ioname).getObject().toString())));
         modelTP.add(ResourceFactory.createStatement(tnRes, tncnContainer, ResourceFactory.createProperty(modelEQ.getRequiredProperty(cnRes,cnContainer).getObject().toString())));
 
-        for (StmtIterator t = modelEQ.listStatements(new SimpleSelector(null, ResourceFactory.createProperty(cimns, "Terminal.ConnectivityNode"), cnRes)); t.hasNext(); ) { // loop on Terminal classes
+        for (StmtIterator t = modelEQ.listStatements(null, ResourceFactory.createProperty(cimns, "Terminal.ConnectivityNode"), cnRes); t.hasNext(); ) { // loop on Terminal classes
             Statement stmtT = t.next();
             modelTP.add(ResourceFactory.createStatement(stmtT.getSubject(), RDF.type, ResourceFactory.createProperty(cimns, "Terminal")));
             modelTP.add(ResourceFactory.createStatement(stmtT.getSubject(), ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode"), tnRes));
@@ -2487,10 +2632,10 @@ public class ModelManipulationFactory {
         return uuidList;
     }
 
-    public static Map<String,Object> BreakerConnections(Model modelTP,Model modEQModel, Model modTPModel, Model modSVModel, List<Statement> lineTN, String cimns, List<Statement> lineTerminals, Resource resBreakerTerm1, Resource resBreakerTerm2, String cgmesVersion, Statement island, boolean cntn1, boolean cntn2, Integer side , boolean twoCN, Model modelTPBD) {
+    public static Map<String,Object> BreakerConnections(Model modelTP,Model modEQModel, Model modTPModel, Model modSVModel, List<Statement> lineTN, String cimns, List<Statement> lineTerminals, Resource resBreakerTerm1, Resource resBreakerTerm2, String cgmesVersion, Statement island, boolean cntn1, boolean cntn2, Integer side , boolean twoCN, Model modelTPBD,List<Statement> lineCN) {
 
         // side =0 is the term, TN CN 1; side =1 is the term , TN, CN 2
-        //twoCN is a switch is 1 CN (false) or 2 CN are created (true)
+        //twoCN is a switch if 1 CN (false) or 2 CN are created (true)
 
         //get all terminal to TN without 1
         List<Statement> termList = GetTerminalsTopologicalNodeMinus1(modelTP,lineTN.get(side),cimns,lineTerminals.get(side));
@@ -2501,12 +2646,19 @@ public class ModelManipulationFactory {
         modTPModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(),termToTN,lineTN.get(side).getObject()));
         //add the term 1 to the TN
         modTPModel.add(ResourceFactory.createStatement(resBreakerTerm1,termToTN,lineTN.get(side).getObject()));
+        Resource cn1res;
+        Resource tn1res;
         if (twoCN) {
             //create CN 1 for side 1
             Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cntn1, cgmesVersion, island, lineTN.get(side), termList, modelTPBD);
             modEQModel = (Model) cn1Side1Map.get("modelEQ");
             modTPModel = (Model) cn1Side1Map.get("modelTP");
             modSVModel = (Model) cn1Side1Map.get("modelSV");
+            cn1res = (Resource) cn1Side1Map.get("resource");
+            tn1res = (Resource) cn1Side1Map.get("TNresource");
+        }else{
+            cn1res= lineCN.get(side).getObject().asResource();
+            tn1res=lineTN.get(side).getObject().asResource();
         }
         //create CN 2 for side 1
         List<Statement> term2Side1List = new LinkedList<>();
@@ -2516,6 +2668,8 @@ public class ModelManipulationFactory {
         modEQModel = (Model) cn2Side1Map.get("modelEQ");
         modTPModel = (Model) cn2Side1Map.get("modelTP");
         modSVModel = (Model) cn2Side1Map.get("modelSV");
+        Resource cn2res = (Resource) cn2Side1Map.get("resource");
+        Resource tn2res = (Resource) cn2Side1Map.get("TNresource");
         if (!cntn2) {
             //add the term 2 to the TN as the breaker is closed and not retained
             modTPModel.add(ResourceFactory.createStatement(resBreakerTerm2, termToTN, lineTN.get(side).getObject()));
@@ -2525,11 +2679,295 @@ public class ModelManipulationFactory {
         breakerConMap.put("modEQModel",modEQModel);
         breakerConMap.put("modTPModel",modTPModel);
         breakerConMap.put("modSVModel",modSVModel);
+        breakerConMap.put("cn1res",cn1res);
+        breakerConMap.put("tn1res",tn1res);
+        breakerConMap.put("cn2res",cn2res);
+        breakerConMap.put("tn2res",tn2res);
 
         return breakerConMap;
     }
 
 
+    private static void exportMapping(Map<String,List> expMapToXls) throws FileNotFoundException {
+
+        String sheetname = "Mapping";
+        String title ="Save file";
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet(sheetname);
+        XSSFRow firstRow= sheet.createRow(0);
+
+        ///set titles of columns
+        firstRow.createCell(0).setCellValue("Element type");
+        firstRow.createCell(1).setCellValue("Element ID");
+        firstRow.createCell(2).setCellValue("ConnectivityNode 1 ID");
+        firstRow.createCell(3).setCellValue("ConnectivityNode 2 ID");
+        firstRow.createCell(4).setCellValue("ConnectivityNode 3 ID");
+        firstRow.createCell(5).setCellValue("ConnectivityNode 4 ID");
+        firstRow.createCell(6).setCellValue("ConnectivityNode 5 ID");
+        firstRow.createCell(7).setCellValue("ConnectivityNode 6 ID");
+        firstRow.createCell(8).setCellValue("TopologicalNode 1 ID");
+        firstRow.createCell(9).setCellValue("TopologicalNode 2 ID");
+        firstRow.createCell(10).setCellValue("TopologicalNode 3 ID");
+        firstRow.createCell(11).setCellValue("TopologicalNode 4 ID");
+        firstRow.createCell(12).setCellValue("TopologicalNode 5 ID");
+        firstRow.createCell(13).setCellValue("TopologicalNode 6 ID");
+        firstRow.createCell(14).setCellValue("Breaker 1 ID");
+        firstRow.createCell(15).setCellValue("Breaker 1 Terminal 1 ID");
+        firstRow.createCell(16).setCellValue("Breaker 1 Terminal 2 ID");
+        firstRow.createCell(17).setCellValue("Breaker 2 ID");
+        firstRow.createCell(18).setCellValue("Breaker 2 ID Terminal 1 ID");
+        firstRow.createCell(19).setCellValue("Breaker 2 ID Terminal 2 ID");
+        firstRow.createCell(20).setCellValue("Breaker 3 ID");
+        firstRow.createCell(21).setCellValue("Breaker 3 ID Terminal 1 ID");
+        firstRow.createCell(22).setCellValue("Breaker 3 ID Terminal 2 ID");
+
+        List column1 = expMapToXls.get("Element_type");
+        List column2 = expMapToXls.get("Element_ID");
+        List column3 = expMapToXls.get("ConnectivityNode_1_ID");
+        List column4 = expMapToXls.get("ConnectivityNode_2_ID");
+        List column5 = expMapToXls.get("ConnectivityNode_3_ID");
+        List column6 = expMapToXls.get("ConnectivityNode_4_ID");
+        List column7 = expMapToXls.get("ConnectivityNode_5_ID");
+        List column8 = expMapToXls.get("ConnectivityNode_6_ID");
+        List column9 = expMapToXls.get("TopologicalNode_1_ID");
+        List column10 = expMapToXls.get("TopologicalNode_2_ID");
+        List column11 = expMapToXls.get("TopologicalNode_3_ID");
+        List column12 = expMapToXls.get("TopologicalNode_4_ID");
+        List column13 = expMapToXls.get("TopologicalNode_5_ID");
+        List column14 = expMapToXls.get("TopologicalNode_6_ID");
+        List column15 = expMapToXls.get("Breaker_1_ID");
+        List column16 = expMapToXls.get("Breaker_1_Terminal_1_ID");
+        List column17 = expMapToXls.get("Breaker_1_Terminal_2_ID");
+        List column18 = expMapToXls.get("Breaker_2_ID");
+        List column19 = expMapToXls.get("Breaker_2_ID_Terminal_1_ID");
+        List column20 = expMapToXls.get("Breaker_2_ID_Terminal_2_ID");
+        List column21 = expMapToXls.get("Breaker_3_ID");
+        List column22 = expMapToXls.get("Breaker_3_ID_Terminal_1_ID");
+        List column23 = expMapToXls.get("Breaker_3_ID_Terminal_2_ID");
+
+        for (int row=0; row<column1.size();row++){
+            XSSFRow xssfRow= sheet.createRow(row+1);
+
+            Object celValue = column1.get(row);
+            try {
+                if (celValue != null && Double.parseDouble(celValue.toString()) != 0.0) {
+                    xssfRow.createCell(0).setCellValue(Double.parseDouble(celValue.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(0).setCellValue(celValue.toString());
+            }
+
+            Object celValue1 = column2.get(row);
+            try {
+                if (celValue1 != null && Double.parseDouble(celValue1.toString()) != 0.0) {
+                    xssfRow.createCell(1).setCellValue(Double.parseDouble(celValue1.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(1).setCellValue(celValue1.toString());
+            }
+
+            Object celValue2 = column3.get(row);
+            try {
+                if (celValue2 != null && Double.parseDouble(celValue2.toString()) != 0.0) {
+                    xssfRow.createCell(2).setCellValue(Double.parseDouble(celValue2.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(2).setCellValue(celValue2.toString());
+            }
+
+            Object celValue3 = column4.get(row);
+            try {
+                if (celValue3 != null && Double.parseDouble(celValue3.toString()) != 0.0) {
+                    xssfRow.createCell(3).setCellValue(Double.parseDouble(celValue3.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(3).setCellValue(celValue3.toString());
+            }
+
+            Object celValue4 = column5.get(row);
+            try {
+                if (celValue4 != null && Double.parseDouble(celValue4.toString()) != 0.0) {
+                    xssfRow.createCell(4).setCellValue(Double.parseDouble(celValue4.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(4).setCellValue(celValue4.toString());
+            }
+
+            Object celValue5 = column6.get(row);
+            try {
+                if (celValue5 != null && Double.parseDouble(celValue5.toString()) != 0.0) {
+                    xssfRow.createCell(5).setCellValue(Double.parseDouble(celValue5.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(5).setCellValue(celValue5.toString());
+            }
+
+            Object celValue6 = column7.get(row);
+            try {
+                if (celValue6 != null && Double.parseDouble(celValue6.toString()) != 0.0) {
+                    xssfRow.createCell(6).setCellValue(Double.parseDouble(celValue6.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(6).setCellValue(celValue6.toString());
+            }
+
+            Object celValue7 = column8.get(row);
+            try {
+                if (celValue7 != null && Double.parseDouble(celValue7.toString()) != 0.0) {
+                    xssfRow.createCell(7).setCellValue(Double.parseDouble(celValue7.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(7).setCellValue(celValue7.toString());
+            }
+
+            Object celValue8 = column9.get(row);
+            try {
+                if (celValue8 != null && Double.parseDouble(celValue8.toString()) != 0.0) {
+                    xssfRow.createCell(8).setCellValue(Double.parseDouble(celValue8.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(8).setCellValue(celValue8.toString());
+            }
+
+            Object celValue9 = column10.get(row);
+            try {
+                if (celValue9 != null && Double.parseDouble(celValue9.toString()) != 0.0) {
+                    xssfRow.createCell(9).setCellValue(Double.parseDouble(celValue9.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(9).setCellValue(celValue9.toString());
+            }
+
+            Object celValue10 = column11.get(row);
+            try {
+                if (celValue10 != null && Double.parseDouble(celValue10.toString()) != 0.0) {
+                    xssfRow.createCell(10).setCellValue(Double.parseDouble(celValue10.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(10).setCellValue(celValue10.toString());
+            }
+
+            Object celValue11 = column12.get(row);
+            try {
+                if (celValue11 != null && Double.parseDouble(celValue11.toString()) != 0.0) {
+                    xssfRow.createCell(11).setCellValue(Double.parseDouble(celValue11.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(11).setCellValue(celValue11.toString());
+            }
+
+            Object celValue12 = column13.get(row);
+            try {
+                if (celValue12 != null && Double.parseDouble(celValue12.toString()) != 0.0) {
+                    xssfRow.createCell(12).setCellValue(Double.parseDouble(celValue12.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(12).setCellValue(celValue12.toString());
+            }
+
+            Object celValue13 = column14.get(row);
+            try {
+                if (celValue13 != null && Double.parseDouble(celValue13.toString()) != 0.0) {
+                    xssfRow.createCell(13).setCellValue(Double.parseDouble(celValue13.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(13).setCellValue(celValue13.toString());
+            }
+
+            Object celValue14 = column15.get(row);
+            try {
+                if (celValue14 != null && Double.parseDouble(celValue14.toString()) != 0.0) {
+                    xssfRow.createCell(14).setCellValue(Double.parseDouble(celValue14.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(14).setCellValue(celValue14.toString());
+            }
+
+            Object celValue15 = column16.get(row);
+            try {
+                if (celValue15 != null && Double.parseDouble(celValue15.toString()) != 0.0) {
+                    xssfRow.createCell(15).setCellValue(Double.parseDouble(celValue15.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(15).setCellValue(celValue15.toString());
+            }
+
+            Object celValue16 = column17.get(row);
+            try {
+                if (celValue16 != null && Double.parseDouble(celValue16.toString()) != 0.0) {
+                    xssfRow.createCell(16).setCellValue(Double.parseDouble(celValue16.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(16).setCellValue(celValue16.toString());
+            }
+
+            Object celValue17 = column18.get(row);
+            try {
+                if (celValue17 != null && Double.parseDouble(celValue17.toString()) != 0.0) {
+                    xssfRow.createCell(17).setCellValue(Double.parseDouble(celValue17.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(17).setCellValue(celValue17.toString());
+            }
+
+            Object celValue18 = column19.get(row);
+            try {
+                if (celValue18 != null && Double.parseDouble(celValue18.toString()) != 0.0) {
+                    xssfRow.createCell(18).setCellValue(Double.parseDouble(celValue18.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(18).setCellValue(celValue18.toString());
+            }
+
+            Object celValue19 = column20.get(row);
+            try {
+                if (celValue19 != null && Double.parseDouble(celValue19.toString()) != 0.0) {
+                    xssfRow.createCell(19).setCellValue(Double.parseDouble(celValue19.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(19).setCellValue(celValue19.toString());
+            }
+
+            Object celValue20 = column21.get(row);
+            try {
+                if (celValue20 != null && Double.parseDouble(celValue20.toString()) != 0.0) {
+                    xssfRow.createCell(20).setCellValue(Double.parseDouble(celValue20.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(20).setCellValue(celValue20.toString());
+            }
+
+            Object celValue21 = column22.get(row);
+            try {
+                if (celValue21 != null && Double.parseDouble(celValue21.toString()) != 0.0) {
+                    xssfRow.createCell(21).setCellValue(Double.parseDouble(celValue21.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(21).setCellValue(celValue21.toString());
+            }
+
+            Object celValue22 = column23.get(row);
+            try {
+                if (celValue22 != null && Double.parseDouble(celValue22.toString()) != 0.0) {
+                    xssfRow.createCell(22).setCellValue(Double.parseDouble(celValue22.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(22).setCellValue(celValue22.toString());
+            }
+
+        }
+
+        File saveFile = core.InstanceDataFactory.filesavecustom("Excel files", List.of("*.xlsx"),title,"");
+        if (saveFile != null) {
+            try {
+                FileOutputStream outputStream = new FileOutputStream(saveFile);
+                workbook.write(outputStream);
+                workbook.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
 }
 
