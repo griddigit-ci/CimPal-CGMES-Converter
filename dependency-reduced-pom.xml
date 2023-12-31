@@ -70,6 +70,6 @@
     <jena.version>4.10.0</jena.version>
     <log4j.version>2.12.1</log4j.version>
     <javafx.version>19.0.2.1</javafx.version>
-    <jdk.version>11</jdk.version>
+    <jdk.version>21</jdk.version>
   </properties>
 </project>
