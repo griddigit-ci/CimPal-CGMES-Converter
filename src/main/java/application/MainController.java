@@ -566,15 +566,15 @@ public class MainController implements Initializable {
     public void actionCBallCondEq() {
         if (fcbAllCondEQ.isSelected()){
             fCBlines.setDisable(true);
-            fCBrafo.setDisable(true);
+            //fCBrafo.setDisable(true);
             fcbSM.setDisable(true);
         }else{
             fCBlines.setDisable(false);
-            fCBrafo.setDisable(false);
+            //fCBrafo.setDisable(false);
             fcbSM.setDisable(false);
         }
         fCBlines.setSelected(false);
-        fCBrafo.setSelected(false);
+        //fCBrafo.setSelected(false);
         fcbSM.setSelected(false);
     }
 
@@ -584,7 +584,7 @@ public class MainController implements Initializable {
             fcbAllCondEQ.setSelected(false);
         }else{
             if (!fCBrafo.isSelected() && !fcbSM.isSelected()){
-                fcbAllCondEQ.setDisable(false);
+                //fcbAllCondEQ.setDisable(false);
             }
         }
     }
@@ -595,7 +595,7 @@ public class MainController implements Initializable {
             fcbAllCondEQ.setSelected(false);
         }else{
             if (!fCBlines.isSelected() && !fcbSM.isSelected()){
-                fcbAllCondEQ.setDisable(false);
+                //fcbAllCondEQ.setDisable(false);
             }
         }
     }
@@ -606,7 +606,7 @@ public class MainController implements Initializable {
             fcbAllCondEQ.setSelected(false);
         }else{
             if (!fCBlines.isSelected() && !fCBrafo.isSelected()){
-                fcbAllCondEQ.setDisable(false);
+                //fcbAllCondEQ.setDisable(false);
             }
         }
     }

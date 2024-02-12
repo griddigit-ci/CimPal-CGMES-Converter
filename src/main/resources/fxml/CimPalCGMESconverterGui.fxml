@@ -157,7 +157,7 @@
                                             <Insets top="20.0" />
                                         </VBox.margin>
                                         <CheckBox fx:id="fCBmodIGM" mnemonicParsing="false" onAction="#actionCBmodIGM" text="Modification of an Individual Grid Model (IGM)" />
-                                        <CheckBox fx:id="fCBmodCGM" mnemonicParsing="false" onAction="#actionCBmodCGM" text="Modification of a Common Grid Model (CGM)" />
+                                        <CheckBox fx:id="fCBmodCGM" disable="true" mnemonicParsing="false" onAction="#actionCBmodCGM" text="Modification of a Common Grid Model (CGM)" />
                                         <Label text="Data exchange standard:" wrapText="true" />
                                         <ChoiceBox fx:id="fCBCGMESstd" HBox.hgrow="ALWAYS">
                                             <HBox.margin>
@@ -199,13 +199,13 @@
                                         <VBox.margin>
                                             <Insets />
                                         </VBox.margin>
-                                        <CheckBox fx:id="fcbAllCondEQ" mnemonicParsing="false" onAction="#actionCBallCondEq" text="Apply to all ConductingEquipment">
+                                        <CheckBox fx:id="fcbAllCondEQ" disable="true" mnemonicParsing="false" onAction="#actionCBallCondEq" text="Apply to all ConductingEquipment">
                                             <HBox.margin>
                                                 <Insets />
                                             </HBox.margin>
                                         </CheckBox>
                                         <CheckBox fx:id="fCBlines" mnemonicParsing="false" onAction="#actionCBapplyLines" text="Apply to Lines" />
-                                        <CheckBox fx:id="fCBrafo" mnemonicParsing="false" onAction="#actionCBapplyPT" text="Apply to PowerTransformer" />
+                                        <CheckBox fx:id="fCBrafo" disable="true" mnemonicParsing="false" onAction="#actionCBapplyPT" text="Apply to PowerTransformer" />
                                         <CheckBox fx:id="fcbSM" mnemonicParsing="false" onAction="#actionCBApplySM" text="Apply to SynchronousMachine">
                                             <HBox.margin>
                                                 <Insets />
@@ -283,6 +283,6 @@
                 </padding>
             </ProgressBar>
         </Pane>
-        <Label font="$x3" text="Version: 2023.3" HBox.hgrow="NEVER" />
+        <Label font="$x3" text="Version: 2024.0" HBox.hgrow="NEVER" />
     </HBox>
 </VBox>
