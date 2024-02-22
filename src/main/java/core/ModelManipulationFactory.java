@@ -2021,6 +2021,48 @@ public class ModelManipulationFactory {
             cimns = "http://iec.ch/TC57/2013/CIM-schema-cim16#";
         }
 
+        //put the xls map to graph
+        if (impMap){
+
+            // load MainController.MappingMapFile - this is the xls mapping file that user selects
+
+            //create empty graph
+            Model mapModel = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+
+            //loop on the file and store the data in the graph mapModel
+
+            //each row should be instance of a class
+            //column A is the type (RDF:type) of the class. column B is the subject of the class
+            //create all resources with cim namespace cims that is defined above
+            //store all properties as plain literal
+            //the name of the properties are
+            // connectivityNode1ID
+            // connectivityNode2ID
+            // connectivityNode3ID
+            // connectivityNode4ID
+            // connectivityNode5ID
+            // connectivityNode6ID
+            // topologicalNode1ID
+            // topologicalNode2ID
+            // topologicalNode3ID
+            // topologicalNode4ID
+            // topologicalNode5ID
+            // topologicalNode6ID
+            // breaker1ID
+            // breaker1Terminal1ID
+            // breaker1Terminal2ID
+            // breaker2ID
+            // breaker2IDTerminal1ID
+            // breaker2IDTerminal2ID
+            // breaker3ID
+            // breaker3IDTerminal1ID
+            // breaker3IDTerminal2ID
+
+            //if the value is NA then just store NA in the literal
+
+
+        }
+
         Map<String,List> expMapToXls = new HashMap<>();
         if (expMap) {
             List Element_type = new ArrayList<>();
@@ -2492,25 +2534,25 @@ public class ModelManipulationFactory {
             Element_ID.add(SMstatement.getSubject().getLocalName());
             ConnectivityNode_1_ID.add(cn1resBreaker.getLocalName());
             ConnectivityNode_2_ID.add(cn1res.getLocalName());
-            ConnectivityNode_3_ID.add("N/A");
-            ConnectivityNode_4_ID.add("N/A");
-            ConnectivityNode_5_ID.add("N/A");
-            ConnectivityNode_6_ID.add("N/A");
+            ConnectivityNode_3_ID.add("NA");
+            ConnectivityNode_4_ID.add("NA");
+            ConnectivityNode_5_ID.add("NA");
+            ConnectivityNode_6_ID.add("NA");
             TopologicalNode_1_ID.add(tn1resBreaker.getLocalName());
             TopologicalNode_2_ID.add(smTN.getFirst().getObject().asResource().getLocalName());
-            TopologicalNode_3_ID.add("N/A");
-            TopologicalNode_4_ID.add("N/A");
-            TopologicalNode_5_ID.add("N/A");
-            TopologicalNode_6_ID.add("N/A");
+            TopologicalNode_3_ID.add("NA");
+            TopologicalNode_4_ID.add("NA");
+            TopologicalNode_5_ID.add("NA");
+            TopologicalNode_6_ID.add("NA");
             Breaker_1_ID.add(resBreaker1.getLocalName());
             Breaker_1_Terminal_1_ID.add(resBreakerTerm1.getLocalName());
             Breaker_1_Terminal_2_ID.add(resBreakerTerm2.getLocalName());
-            Breaker_2_ID.add("N/A");
-            Breaker_2_ID_Terminal_1_ID.add("N/A");
-            Breaker_2_ID_Terminal_2_ID.add("N/A");
-            Breaker_3_ID.add("N/A");
-            Breaker_3_ID_Terminal_1_ID.add("N/A");
-            Breaker_3_ID_Terminal_2_ID.add("N/A");
+            Breaker_2_ID.add("NA");
+            Breaker_2_ID_Terminal_1_ID.add("NA");
+            Breaker_2_ID_Terminal_2_ID.add("NA");
+            Breaker_3_ID.add("NA");
+            Breaker_3_ID_Terminal_1_ID.add("NA");
+            Breaker_3_ID_Terminal_2_ID.add("NA");
 
 
             expMapToXls.replace("Element_type",Element_type);
@@ -2737,29 +2779,29 @@ public class ModelManipulationFactory {
             List Breaker_3_ID_Terminal_2_ID = expMapToXls.get("Breaker_3_ID_Terminal_2_ID");
 
 
-            Element_type.add(LineList.get(0).getObject().asResource().getLocalName());
-            Element_ID.add(LineList.get(0).getSubject().getLocalName());
+            Element_type.add(LineList.getFirst().getObject().asResource().getLocalName());
+            Element_ID.add(LineList.getFirst().getSubject().getLocalName());
             ConnectivityNode_1_ID.add(cn1res.getLocalName());
             ConnectivityNode_2_ID.add(cn1resBreaker.getLocalName());
             ConnectivityNode_3_ID.add(cn2resBreaker.getLocalName());
             ConnectivityNode_4_ID.add(cn2res.getLocalName());
-            ConnectivityNode_5_ID.add("N/A");
-            ConnectivityNode_6_ID.add("N/A");
+            ConnectivityNode_5_ID.add("NA");
+            ConnectivityNode_6_ID.add("NA");
             TopologicalNode_1_ID.add(lineTN.getFirst().getObject().asResource().getLocalName());
             TopologicalNode_2_ID.add(tn1resBreaker.getLocalName());
             TopologicalNode_3_ID.add(tn2resBreaker.getLocalName());
             TopologicalNode_4_ID.add(lineTN.get(1).getObject().asResource().getLocalName());
-            TopologicalNode_5_ID.add("N/A");
-            TopologicalNode_6_ID.add("N/A");
+            TopologicalNode_5_ID.add("NA");
+            TopologicalNode_6_ID.add("NA");
             Breaker_1_ID.add(resBreaker1.getLocalName());
             Breaker_1_Terminal_1_ID.add(resBreaker1Term1.getLocalName());
             Breaker_1_Terminal_2_ID.add(resBreaker1Term2.getLocalName());
             Breaker_2_ID.add(resBreaker2.getLocalName());
             Breaker_2_ID_Terminal_1_ID.add(resBreaker2Term1.getLocalName());
             Breaker_2_ID_Terminal_2_ID.add(resBreaker2Term2.getLocalName());
-            Breaker_3_ID.add("N/A");
-            Breaker_3_ID_Terminal_1_ID.add("N/A");
-            Breaker_3_ID_Terminal_2_ID.add("N/A");
+            Breaker_3_ID.add("NA");
+            Breaker_3_ID_Terminal_1_ID.add("NA");
+            Breaker_3_ID_Terminal_2_ID.add("NA");
 
 
             expMapToXls.replace("Element_type",Element_type);
@@ -2946,7 +2988,7 @@ public class ModelManipulationFactory {
         modTPModel = (Model) cn1Side1Map.get("modelTP");
         modSVModel = (Model) cn1Side1Map.get("modelSV");
         Resource cn1res = (Resource) cn1Side1Map.get("resource");
-        Resource tn1res = ResourceFactory.createResource(cimns+ "N/A");
+        Resource tn1res = ResourceFactory.createResource(cimns+ "NA");
 
         if (!breakerStatus) { // breaker is open, add also TN
             Map<String,Object> tnMap = AddTopologicalNode(modEQModel, modTPModel, modSVModel,cimns,island,cn1res,cgmesVersion);
@@ -2982,7 +3024,7 @@ public class ModelManipulationFactory {
         modTPModel = (Model) cn2Side1Map.get("modelTP");
         modSVModel = (Model) cn2Side1Map.get("modelSV");
         Resource cn2res = (Resource) cn2Side1Map.get("resource");
-        Resource tn2res = ResourceFactory.createResource(cimns+ "N/A");
+        Resource tn2res = ResourceFactory.createResource(cimns+ "NA");
 
         if (!breakerStatus) { // breaker is open, add also TN
             Map<String,Object> tnMap = AddTopologicalNode(modEQModel, modTPModel, modSVModel,cimns,island,cn2res,cgmesVersion);
@@ -3035,7 +3077,7 @@ public class ModelManipulationFactory {
         modTPModel = (Model) cn1Side1Map.get("modelTP");
         modSVModel = (Model) cn1Side1Map.get("modelSV");
         Resource cn1res = (Resource) cn1Side1Map.get("resource");
-        Resource tn1res = ResourceFactory.createResource(cimns+ "N/A");
+        Resource tn1res = ResourceFactory.createResource(cimns+ "NA");
 
         if (!breakerStatus) { // breaker is open, add also TN
             Map<String,Object> tnMap = AddTopologicalNode(modEQModel, modTPModel, modSVModel,cimns,island,cn1res,cgmesVersion);

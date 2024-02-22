@@ -494,7 +494,7 @@ public class MainController implements Initializable {
 
         if (fileL != null) {// the file is selected
 
-            MainController.prefs.put("LastWorkingFolder", fileL.get(0).getParent());
+            MainController.prefs.put("LastWorkingFolder", fileL.getFirst().getParent());
             fPathMapFile.setText(fileL.toString());
             MainController.MappingMapFile=fileL;
         } else{
@@ -526,7 +526,7 @@ public class MainController implements Initializable {
 
         if (fileL != null) {// the file is selected
 
-            MainController.prefs.put("LastWorkingFolder", fileL.get(0).getParent());
+            MainController.prefs.put("LastWorkingFolder", fileL.getFirst().getParent());
             fPathIGMCGM.setText(fileL.toString());
             MainController.IDModel=fileL;
         } else{
