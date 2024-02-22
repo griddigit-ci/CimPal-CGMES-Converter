@@ -2023,11 +2023,11 @@ public class ModelManipulationFactory {
         }
 
         //put the xls map to graph
-        if (impMap){
 
-            // load MainController.MappingMapFile - this is the xls mapping file that user selects
+        Model mapModel = null;
+        if (impMap){
             //create empty graph
-            Model mapModel = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+            mapModel = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
 
             List<String> prop_names = Arrays.asList(
                     "connectivityNode1ID",
@@ -2053,7 +2053,9 @@ public class ModelManipulationFactory {
                     "breaker3IDTerminal2ID"
             );
             for (File file : MainController.MappingMapFile) {
+                // load MainController.MappingMapFile - this is the xls mapping file that user selects
                 ArrayList<Object> inputXLSdata = ExcelTools.importXLSX(file, 0);
+                //loop on the file and store the data in the graph mapModel
                 for (int i = 1; i < inputXLSdata.size(); i++) {
                     LinkedList<?> row = (LinkedList<?>) inputXLSdata.get(i);
                     Resource subject = ResourceFactory.createResource(cimns+row.get(1).toString());
@@ -2063,45 +2065,13 @@ public class ModelManipulationFactory {
                     int k = 0;
                     for (int j = 2; j < row.size(); j++){
                         object = ResourceFactory.createPlainLiteral(row.get(j).toString());
-                        Property predicate = ResourceFactory.createProperty(prop_names.get(k));
+                        Property predicate = ResourceFactory.createProperty(cimns+prop_names.get(k));
                         stmt = ResourceFactory.createStatement(subject,predicate,object);
                         mapModel.add(stmt);
                         k++;
                     }
                 }
             }
-            //loop on the file and store the data in the graph mapModel
-
-            //each row should be instance of a class
-            //column A is the type (RDF:type) of the class. column B is the subject of the class
-            //create all resources with cim namespace cims that is defined above
-            //store all properties as plain literal
-            //the name of the properties are
-            // connectivityNode1ID
-            // connectivityNode2ID
-            // connectivityNode3ID
-            // connectivityNode4ID
-            // connectivityNode5ID
-            // connectivityNode6ID
-            // topologicalNode1ID
-            // topologicalNode2ID
-            // topologicalNode3ID
-            // topologicalNode4ID
-            // topologicalNode5ID
-            // topologicalNode6ID
-            // breaker1ID
-            // breaker1Terminal1ID
-            // breaker1Terminal2ID
-            // breaker2ID
-            // breaker2IDTerminal1ID
-            // breaker2IDTerminal2ID
-            // breaker3ID
-            // breaker3IDTerminal1ID
-            // breaker3IDTerminal2ID
-
-            //if the value is NA then just store NA in the literal
-
-
         }
 
         Map<String,List> expMapToXls = new HashMap<>();
