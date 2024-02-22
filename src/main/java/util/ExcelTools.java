@@ -57,4 +57,38 @@ public class ExcelTools {
         }
         return dataExcel;
     }
+    public static ArrayList<Object> importXLSX(File excel, int sheetnum) {
+        ArrayList<Object> dataExcel = new ArrayList<>();
+        try {
+            FileInputStream fis = new FileInputStream(excel);
+            XSSFWorkbook book = new XSSFWorkbook(fis);
+            XSSFSheet sheet = book.getSheetAt(sheetnum);
+            // Iterating over Excel file in Java
+
+            for (Row cells : sheet) {
+                LinkedList<Object> rowItem = new LinkedList<>();
+
+                for (Cell currentCell : cells) {
+
+                    //getCellTypeEnum shown as deprecated for version 3.15
+                    //getCellTypeEnum ill be renamed to getCellType starting from version 4.0
+                    if (currentCell.getCellType() == CellType.STRING) {
+                        //System.out.print(currentCell.getStringCellValue() + "--");
+                        rowItem.add(currentCell.getStringCellValue());
+                    } else if (currentCell.getCellType() == CellType.NUMERIC) {
+                        //System.out.print(currentCell.getNumericCellValue() + "--");
+                        rowItem.add(currentCell.getNumericCellValue());
+                    }
+
+                }
+                dataExcel.add(rowItem);
+                //System.out.println();
+
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return dataExcel;
+    }
 }
