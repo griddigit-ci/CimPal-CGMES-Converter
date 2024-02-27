@@ -32,6 +32,7 @@ import java.util.*;
 public class ModelManipulationFactory {
 
     public static Map<String, String> nameMap;
+    public static Model mapModel;
 
     //Convert CGMES v2.4 to CGMES v3.0
     public static void ConvertCGMESv2v3(Map<String, Map> loadDataMap, int keepExtensions, int eqOnly, int fixRegCont) throws IOException {
@@ -2066,10 +2067,10 @@ public class ModelManipulationFactory {
 
         //put the xls map to graph
 
-        Model mapModel = null;
+
         if (impMap){
             //create empty graph
-            mapModel = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+            mapModel = ModelFactory.createDefaultModel();
 
             List<String> prop_names = Arrays.asList(
                     "connectivityNode1ID",
@@ -2085,8 +2086,8 @@ public class ModelManipulationFactory {
                     "topologicalNode5ID",
                     "topologicalNode6ID",
                     "breaker1ID",
-                    "breaker1Terminal1ID",
-                    "breaker1Terminal2ID",
+                    "breaker1IDTerminal1ID",
+                    "breaker1IDTerminal2ID",
                     "breaker2ID",
                     "breaker2IDTerminal1ID",
                     "breaker2IDTerminal2ID",
@@ -2265,7 +2266,7 @@ public class ModelManipulationFactory {
                     LineList = new LinkedList<>();
                     LineList.add(stmt);
                 }
-                Map<String,Object> breakerLineMap = AddBreakerLine(LineList,modelEQ,modelTP,modelSV,modelSSH,modEQModel,modSSHModel, modSVModel,modTPModel,cimns,cgmesVersion, modelTPBD,expMapToXls,expMap);
+                Map<String,Object> breakerLineMap = AddBreakerLine(LineList,modelEQ,modelTP,modelSV,modelSSH,modEQModel,modSSHModel, modSVModel,modTPModel,cimns,cgmesVersion, modelTPBD,expMapToXls,expMap,impMap);
                 modEQModel = (Model) breakerLineMap.get("modEQModel");
                 modTPModel = (Model) breakerLineMap.get("modTPModel");
                 modSVModel = (Model) breakerLineMap.get("modSVModel");
@@ -2280,7 +2281,7 @@ public class ModelManipulationFactory {
                 Statement stmt = s.next();
 
                 // do the routine for cases when there is one ACLineSegment in a Line
-                Map<String,Object> breakerLineMap = AddBreakerSynchronousMachine(stmt,modelEQ,modelTP,modelSV,modelSSH,modEQModel,modSSHModel, modSVModel,modTPModel,cimns,cgmesVersion, modelTPBD,expMapToXls,expMap);
+                Map<String,Object> breakerLineMap = AddBreakerSynchronousMachine(stmt,modelEQ,modelTP,modelSV,modelSSH,modEQModel,modSSHModel, modSVModel,modTPModel,cimns,cgmesVersion, modelTPBD,expMapToXls,expMap,impMap);
                 modEQModel = (Model) breakerLineMap.get("modEQModel");
                 modTPModel = (Model) breakerLineMap.get("modTPModel");
                 modSVModel = (Model) breakerLineMap.get("modSVModel");
@@ -2383,9 +2384,32 @@ public class ModelManipulationFactory {
     }
 
     //Add Breaker
-    public static Map<String,Object> AddBreaker(Model modelEQ, Model modelSSH, Model modelSV, String cimns, boolean status, String cgmesVersion) {
-        List<String> ids = GenerateUUID();
-        Resource breakerRes = ResourceFactory.createResource(cimns+ids.get(1));
+    public static Map<String,Object> AddBreaker(Model modelEQ, Model modelSSH, Model modelSV, String cimns, boolean status, String cgmesVersion,boolean impMap,Map<String,String> mapIDs,int breakerNumber) {
+
+        List<String> ids = new LinkedList<>();
+        if (impMap) {
+            try {
+                if (breakerNumber == 1) {
+                    String id = mapIDs.get("breaker1ID");
+                    ids.add(id.split("_", 2)[1]);
+                    ids.add(id);
+
+                } else if (breakerNumber == 2) {
+                    String id = mapIDs.get("breaker2ID");
+                    ids.add(id.split("_", 2)[1]);
+                    ids.add(id);
+                } else {
+                    String id = mapIDs.get("breaker3ID");
+                    ids.add(id.split("_", 2)[1]);
+                    ids.add(id);
+                }
+            }catch (Exception e){
+                ids = GenerateUUID();
+            }
+        }else{
+            ids = GenerateUUID();
+        }
+        Resource breakerRes = ResourceFactory.createResource(cimns + ids.get(1));
         Property ioname = ResourceFactory.createProperty(cimns,"IdentifiedObject.name");
         Property mrid = ResourceFactory.createProperty(cimns,"IdentifiedObject.mRID");
         Property retained = ResourceFactory.createProperty(cimns,"Switch.retained");
@@ -2406,12 +2430,12 @@ public class ModelManipulationFactory {
         }
 
         //create 2 terminals
-        Map<String,Object> term1Map = AddTerminal(modelEQ, modelSSH,cimns,"1",cgmesVersion,breakerRes);
+        Map<String,Object> term1Map = AddTerminal(modelEQ, modelSSH,cimns,"1",cgmesVersion,breakerRes,impMap,mapIDs,breakerNumber);
         Resource term1Res = (Resource) term1Map.get("resource");
         modelEQ = (Model) term1Map.get("modelEQ");
         modelSSH = (Model) term1Map.get("modelSSH");
 
-        Map<String,Object> term2Map = AddTerminal(modelEQ, modelSSH,cimns,"2",cgmesVersion,breakerRes);
+        Map<String,Object> term2Map = AddTerminal(modelEQ, modelSSH,cimns,"2",cgmesVersion,breakerRes,impMap,mapIDs,breakerNumber);
         Resource term2Res = (Resource) term2Map.get("resource");
         modelEQ = (Model) term2Map.get("modelEQ");
         modelSSH = (Model) term2Map.get("modelSSH");
@@ -2430,8 +2454,12 @@ public class ModelManipulationFactory {
 
 
     //Add Breaker on a SynchronousMachine
-    public static Map<String,Object> AddBreakerSynchronousMachine(Statement SMstatement,Model modelEQ, Model modelTP, Model modelSV,Model modelSSH,Model modEQModel,Model modSSHModel, Model modSVModel, Model modTPModel,String cimns, String cgmesVersion, Model modelTPBD,Map<String,List> expMapToXls, boolean expMap) {
+    public static Map<String,Object> AddBreakerSynchronousMachine(Statement SMstatement,Model modelEQ, Model modelTP, Model modelSV,Model modelSSH,Model modEQModel,Model modSSHModel, Model modSVModel, Model modTPModel,String cimns, String cgmesVersion, Model modelTPBD,Map<String,List> expMapToXls, boolean expMap,boolean impMap) {
 
+        Map<String,String> mapIDs = null;
+        if (impMap){
+            mapIDs = GetMapIDs(SMstatement);
+        }
         // add breakers
         List<Statement> smTerminals = GetElementTerminals(modelEQ,SMstatement,cimns);
         List<Statement> smCN = GetElementConnectivityNodes(modelEQ, smTerminals, cimns);
@@ -2449,7 +2477,8 @@ public class ModelManipulationFactory {
         // originTN is one of the list lineTN for which breaker and CN/TN are added it is used to sort out the containment
 
         //add breaker 1
-        Map<String,Object> breaker1Map = AddBreaker(modEQModel, modSSHModel, modSVModel, cimns, breakerStatus, cgmesVersion);
+        int breakerNumber = 1;
+        Map<String,Object> breaker1Map = AddBreaker(modEQModel, modSSHModel, modSVModel, cimns, breakerStatus, cgmesVersion,impMap,mapIDs,breakerNumber);
         Resource resBreakerTerm1 = (Resource) breaker1Map.get("resourceTerm1");
         Resource resBreakerTerm2 = (Resource) breaker1Map.get("resourceTerm2");
         Resource resBreaker1 = (Resource) breaker1Map.get("breakerRes");
@@ -2472,7 +2501,7 @@ public class ModelManipulationFactory {
         modEQModel.add(ResourceFactory.createStatement(resBreaker1, eqToEQcontainer, tnContainer));
 
         //manage inner connections
-        Map<String, Object> innerConMap = SMInnerConnections(modEQModel,modTPModel,modSVModel,smTN,cimns, smTerminals,resBreakerTerm2,cgmesVersion,island,modelTPBD,breakerStatus);
+        Map<String, Object> innerConMap = SMInnerConnections(modEQModel,modTPModel,modSVModel,smTN,cimns, smTerminals,resBreakerTerm2,cgmesVersion,island,modelTPBD,breakerStatus,impMap,mapIDs);
         modEQModel = (Model) innerConMap.get("modEQModel");
         modTPModel = (Model) innerConMap.get("modTPModel");
         modSVModel = (Model) innerConMap.get("modSVModel");
@@ -2484,6 +2513,7 @@ public class ModelManipulationFactory {
 
         //check Connectivity nodes and Topological nodes at the two ends and connect
         int side = 0;
+        boolean innerSide = false;
         Resource cn1res;
         Property cnToTn = ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode");
         Property termToCn = ResourceFactory.createProperty(cimns, "Terminal.ConnectivityNode");
@@ -2520,7 +2550,7 @@ public class ModelManipulationFactory {
                 }
             }
             terminalsCN.add(resBreakerTerm1);
-            Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, smTN.get(side), terminalsCN, modelTPBD);
+            Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, smTN.get(side), terminalsCN, modelTPBD,impMap,mapIDs,side,innerSide);
             modEQModel = (Model) cn1Side1Map.get("modelEQ");
             modTPModel = (Model) cn1Side1Map.get("modelTP");
             modSVModel = (Model) cn1Side1Map.get("modelSV");
@@ -2531,35 +2561,6 @@ public class ModelManipulationFactory {
 
         modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
         modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(smTN.get(side).getObject().toString())));
-
-
-
-//        Map<String, Object> breaker1ConMap;
-//        if (smCN.isEmpty()) { // no CN
-//            if (breakerStatus){ //no TN
-//                //add for TN 1, side 1
-//                breaker1ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, smTN, cimns, smTerminals, resBreakerTerm1, resBreakerTerm2, cgmesVersion, island, false, false, 0, true, modelTPBD,smCN);
-//            }else{//create 1 TN and 2 CN
-//                //add for TN 1, side 1
-//                breaker1ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, smTN, cimns, smTerminals, resBreakerTerm1, resBreakerTerm2, cgmesVersion, island, false, true, 0, true, modelTPBD,smCN);
-//            }
-//        }else{// there is CN
-//            //create 1 CN
-//            if (breakerStatus){ // no TN
-//                //add for TN 1, side 1
-//                breaker1ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, smTN, cimns, smTerminals, resBreakerTerm1, resBreakerTerm2, cgmesVersion, island, false, false, 0, false, modelTPBD,smCN);
-//            }else{// create 1 CN and 1 TN
-//                //add for TN 1, side 1
-//                breaker1ConMap = BreakerConnections(modelTP, modEQModel, modTPModel, modSVModel, smTN, cimns, smTerminals, resBreakerTerm1, resBreakerTerm2, cgmesVersion, island, false, true, 0, false, modelTPBD,smCN);
-//            }
-//        }
-//        modEQModel = (Model) breaker1ConMap.get("modEQModel");
-//        modTPModel = (Model) breaker1ConMap.get("modTPModel");
-//        modSVModel = (Model) breaker1ConMap.get("modSVModel");
-//        Resource cn1resBreaker1 = (Resource) breaker1ConMap.get("cn1res");
-//        Resource tn1resBreaker1 = (Resource) breaker1ConMap.get("tn1res");
-//        Resource cn2resBreaker1 = (Resource) breaker1ConMap.get("cn2res");
-//        Resource tn2resBreaker1 = (Resource) breaker1ConMap.get("tn2res");
 
 
         if (expMap) {
@@ -2590,14 +2591,14 @@ public class ModelManipulationFactory {
 
             Element_type.add(SMstatement.getObject().asResource().getLocalName());
             Element_ID.add(SMstatement.getSubject().getLocalName());
-            ConnectivityNode_1_ID.add(cn1resBreaker.getLocalName());
-            ConnectivityNode_2_ID.add(cn1res.getLocalName());
+            ConnectivityNode_1_ID.add(cn1res.getLocalName());
+            ConnectivityNode_2_ID.add(cn1resBreaker.getLocalName());
             ConnectivityNode_3_ID.add("NA");
             ConnectivityNode_4_ID.add("NA");
             ConnectivityNode_5_ID.add("NA");
             ConnectivityNode_6_ID.add("NA");
-            TopologicalNode_1_ID.add(tn1resBreaker.getLocalName());
-            TopologicalNode_2_ID.add(smTN.getFirst().getObject().asResource().getLocalName());
+            TopologicalNode_1_ID.add(smTN.getFirst().getObject().asResource().getLocalName());
+            TopologicalNode_2_ID.add(tn1resBreaker.getLocalName());
             TopologicalNode_3_ID.add("NA");
             TopologicalNode_4_ID.add("NA");
             TopologicalNode_5_ID.add("NA");
@@ -2649,10 +2650,16 @@ public class ModelManipulationFactory {
     }
 
     //Add Breaker on a line
-    public static Map<String,Object> AddBreakerLine(List<Statement> LineList,Model modelEQ, Model modelTP, Model modelSV,Model modelSSH,Model modEQModel,Model modSSHModel, Model modSVModel, Model modTPModel,String cimns, String cgmesVersion, Model modelTPBD,Map<String,List> expMapToXls, boolean expMap) {
+    public static Map<String,Object> AddBreakerLine(List<Statement> lineList,Model modelEQ, Model modelTP, Model modelSV,Model modelSSH,Model modEQModel,Model modSSHModel, Model modSVModel, Model modTPModel,String cimns, String cgmesVersion, Model modelTPBD,Map<String,List> expMapToXls, boolean expMap, boolean impMap) {
+
+        Map<String,String> mapIDs = null;
+        if (impMap){
+            mapIDs = GetMapIDs(lineList.getFirst());
+        }
 
         // check original connections
-        List<Statement> lineTerminals = GetElementTerminals(modelEQ,LineList.getFirst(),cimns);
+        Statement objStmt = lineList.getFirst();
+        List<Statement> lineTerminals = GetElementTerminals(modelEQ,lineList.getFirst(),cimns);
         List<Statement> lineCN = GetElementConnectivityNodes(modelEQ, lineTerminals, cimns);
         List<Statement> lineTN= GetElementTopologicalNodes(modelTP, lineTerminals, lineCN, cimns);
         Statement island;
@@ -2667,7 +2674,8 @@ public class ModelManipulationFactory {
 
         //create breakers
         //create breaker 1
-        Map<String,Object> breaker1Map = AddBreaker(modEQModel, modSSHModel, modSVModel, cimns, breakerStatus, cgmesVersion);
+        int breakerNumber = 1;
+        Map<String,Object> breaker1Map = AddBreaker(modEQModel, modSSHModel, modSVModel, cimns, breakerStatus, cgmesVersion,impMap,mapIDs,breakerNumber);
         Resource resBreaker1Term1 = (Resource) breaker1Map.get("resourceTerm1");
         Resource resBreaker1Term2 = (Resource) breaker1Map.get("resourceTerm2");
         Resource resBreaker1 = (Resource) breaker1Map.get("breakerRes");
@@ -2676,7 +2684,8 @@ public class ModelManipulationFactory {
         modSVModel = (Model) breaker1Map.get("modelSV");
 
         //create breaker 2
-        Map<String,Object> breaker2Map = AddBreaker(modEQModel, modSSHModel, modSVModel, cimns, breakerStatus, cgmesVersion);
+        breakerNumber = 2;
+        Map<String,Object> breaker2Map = AddBreaker(modEQModel, modSSHModel, modSVModel, cimns, breakerStatus, cgmesVersion,impMap,mapIDs,breakerNumber);
         Resource resBreaker2Term1 = (Resource) breaker2Map.get("resourceTerm1");
         Resource resBreaker2Term2 = (Resource) breaker2Map.get("resourceTerm2");
         Resource resBreaker2 = (Resource) breaker2Map.get("breakerRes");
@@ -2709,7 +2718,7 @@ public class ModelManipulationFactory {
         modEQModel.add(ResourceFactory.createStatement(resBreaker2, eqToEQcontainer, tnContainer));
 
         //manage inner connections
-        Map<String, Object> innerConMap = LineInnerConnections(modEQModel,modTPModel,modSVModel,lineTN,cimns, lineTerminals,resBreaker1Term2,resBreaker2Term2,cgmesVersion,island,modelTPBD,breakerStatus);
+        Map<String, Object> innerConMap = LineInnerConnections(modEQModel,modTPModel,modSVModel,lineTN,cimns, lineTerminals,resBreaker1Term2,resBreaker2Term2,cgmesVersion,island,modelTPBD,breakerStatus,impMap,mapIDs);
         modEQModel = (Model) innerConMap.get("modEQModel");
         modTPModel = (Model) innerConMap.get("modTPModel");
         modSVModel = (Model) innerConMap.get("modSVModel");
@@ -2720,6 +2729,7 @@ public class ModelManipulationFactory {
 
         //check Connectivity nodes and Topological nodes at the two ends and connect
         int side = 0;
+        boolean innerSide = false;
         Resource cn1res;
         Property cnToTn = ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode");
         Property termToCn = ResourceFactory.createProperty(cimns, "Terminal.ConnectivityNode");
@@ -2756,7 +2766,7 @@ public class ModelManipulationFactory {
                 }
             }
             terminalsCN.add(resBreaker1Term1);
-            Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD);
+            Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD,impMap,mapIDs,side,innerSide);
             modEQModel = (Model) cn1Side1Map.get("modelEQ");
             modTPModel = (Model) cn1Side1Map.get("modelTP");
             modSVModel = (Model) cn1Side1Map.get("modelSV");
@@ -2800,7 +2810,7 @@ public class ModelManipulationFactory {
                 }
             }
             terminalsCN.add(resBreaker2Term1);
-            Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD);
+            Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD,impMap,mapIDs,side,innerSide);
             modEQModel = (Model) cn1Side1Map.get("modelEQ");
             modTPModel = (Model) cn1Side1Map.get("modelTP");
             modSVModel = (Model) cn1Side1Map.get("modelSV");
@@ -2837,8 +2847,8 @@ public class ModelManipulationFactory {
             List Breaker_3_ID_Terminal_2_ID = expMapToXls.get("Breaker_3_ID_Terminal_2_ID");
 
 
-            Element_type.add(LineList.getFirst().getObject().asResource().getLocalName());
-            Element_ID.add(LineList.getFirst().getSubject().getLocalName());
+            Element_type.add(lineList.getFirst().getObject().asResource().getLocalName());
+            Element_ID.add(lineList.getFirst().getSubject().getLocalName());
             ConnectivityNode_1_ID.add(cn1res.getLocalName());
             ConnectivityNode_2_ID.add(cn1resBreaker.getLocalName());
             ConnectivityNode_3_ID.add(cn2resBreaker.getLocalName());
@@ -2898,7 +2908,7 @@ public class ModelManipulationFactory {
     }
 
     //Add ConnectivityNode
-    public static Map<String,Object> AddConnectivityNode(Model modelEQ, Model modelTP, Model modelSV, String cimns, String cgmesVersion, Statement originTN, List<Resource> terminalsCN, Model modelTPBD) {
+    public static Map<String,Object> AddConnectivityNode(Model modelEQ, Model modelTP, Model modelSV, String cimns, String cgmesVersion, Statement originTN, List<Resource> terminalsCN, Model modelTPBD,boolean impMap, Map<String,String> mapIDs,int side,boolean innerSide) {
 
 
         Property mrid = ResourceFactory.createProperty("http://iec.ch/TC57/CIM100#IdentifiedObject.mRID");
@@ -2906,7 +2916,39 @@ public class ModelManipulationFactory {
         Property termToCN = ResourceFactory.createProperty(cimns,"Terminal.ConnectivityNode");
         Property cncncontainer = ResourceFactory.createProperty(cimns, "ConnectivityNode.ConnectivityNodeContainer");
 
-        List<String> ids = GenerateUUID();
+        List<String> ids = new LinkedList<>();
+        if (impMap) {
+            try {
+                if (innerSide) {
+                    if (side == 0) {
+                        String id = mapIDs.get("connectivityNode2ID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+
+                    } else if (side == 1) {
+                        String id = mapIDs.get("connectivityNode3ID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+                    }
+                } else if (!innerSide) {
+                    if (side == 0) {
+                        String id = mapIDs.get("connectivityNode1ID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+
+                    } else if (side == 1) {
+                        String id = mapIDs.get("connectivityNode4ID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+                    }
+                }
+            }catch (Exception e) {
+                ids = GenerateUUID();
+            }
+        }else{
+            ids = GenerateUUID();
+        }
+
         Resource cnRes = ResourceFactory.createResource(cimns + ids.get(1));
         modelEQ.add(ResourceFactory.createStatement(cnRes, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
         if (cgmesVersion.equals("CGMESv3.0")) {
@@ -2947,13 +2989,44 @@ public class ModelManipulationFactory {
 
 
     //Add TopologicalNode
-    public static Map<String,Object> AddTopologicalNode(Model modelEQ, Model modelTP, Model modelSV, String cimns, Statement island, Resource cnRes,String cgmesVersion) {
+    public static Map<String,Object> AddTopologicalNode(Model modelEQ, Model modelTP, Model modelSV, String cimns, Statement island, Resource cnRes,String cgmesVersion,boolean impMap, Map<String,String> mapIDs,int side,boolean innerSide) {
         Property mrid = ResourceFactory.createProperty("http://iec.ch/TC57/CIM100#IdentifiedObject.mRID");
         Property ioname = ResourceFactory.createProperty(cimns,"IdentifiedObject.name");
         Property tncnContainer = ResourceFactory.createProperty(cimns,"TopologicalNode.ConnectivityNodeContainer");
         Property cnContainer = ResourceFactory.createProperty(cimns,"ConnectivityNode.ConnectivityNodeContainer");
         // add in TP,
-        List<String> ids = GenerateUUID();
+        List<String> ids = new LinkedList<>();
+        if (impMap) {
+            try {
+                if (innerSide) {
+                    if (side == 0) {
+                        String id = mapIDs.get("topologicalNode2ID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+
+                    } else if (side == 1) {
+                        String id = mapIDs.get("topologicalNode3ID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+                    }
+                } else if (!innerSide) {
+                    if (side == 0) {
+                        String id = mapIDs.get("topologicalNode1ID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+
+                    } else if (side == 1) {
+                        String id = mapIDs.get("topologicalNode4ID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+                    }
+                }
+            }catch (Exception e) {
+                ids = GenerateUUID();
+            }
+        }else{
+            ids = GenerateUUID();
+        }
         Resource tnRes = ResourceFactory.createResource(cimns + ids.get(1));
         modelTP.add(ResourceFactory.createStatement(tnRes, RDF.type, ResourceFactory.createProperty(cimns, "TopologicalNode")));
         if (cgmesVersion.equals("CGMESv3.0")) {
@@ -2981,7 +3054,7 @@ public class ModelManipulationFactory {
             modelSV.add(ResourceFactory.createStatement(svvoltageRes, ResourceFactory.createProperty(cimns,"SvVoltage.TopologicalNode"), ResourceFactory.createResource(tnRes.toString())));
         }
 
-        //TODO see if something needs to be dene with SvPowerFlow on Terminals
+        //TODO see if something needs to be done with SvPowerFlow on Terminals
 
         Map<String,Object> tnMap = new HashMap<>();
         tnMap.put("resource",tnRes);
@@ -2992,8 +3065,47 @@ public class ModelManipulationFactory {
     }
 
     //Add Terminal
-    public static Map<String,Object> AddTerminal(Model modelEQ, Model modelSSH, String cimns, String seqnumber, String cgmesVersion,Resource breakerRes) {
-        List<String> ids = GenerateUUID();
+    public static Map<String,Object> AddTerminal(Model modelEQ, Model modelSSH, String cimns, String seqnumber, String cgmesVersion,Resource breakerRes,boolean impMap,Map<String,String> mapIDs,int breakerNumber) {
+        List<String> ids = new LinkedList<>();
+        if (impMap) {
+            try{
+                if (breakerNumber == 1) {
+                    if (seqnumber.equals("1")) {
+                        String id = mapIDs.get("breaker1IDTerminal1ID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+                    } else if (seqnumber.equals("2")) {
+                        String id = mapIDs.get("breaker1IDTerminal2ID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+                    }
+                }else if (breakerNumber == 2) {
+                    if (seqnumber.equals("1")) {
+                        String id = mapIDs.get("breaker2IDTerminal1ID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+                    } else if (seqnumber.equals("2")) {
+                        String id = mapIDs.get("breaker2IDTerminal2ID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+                    }
+                }else if (breakerNumber == 3) {
+                    if (seqnumber.equals("1")) {
+                        String id = mapIDs.get("breaker3IDTerminal1ID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+                    } else if (seqnumber.equals("2")) {
+                        String id = mapIDs.get("breaker3IDTerminal2ID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+                    }
+                }
+            }catch (Exception e){
+                ids = GenerateUUID();
+            }
+        }else{
+            ids = GenerateUUID();
+        }
         Resource termRes = ResourceFactory.createResource(cimns + ids.get(1));
         Property mrid = ResourceFactory.createProperty("http://iec.ch/TC57/CIM100#IdentifiedObject.mRID");
         Property ioname = ResourceFactory.createProperty(cimns,"IdentifiedObject.name");
@@ -3031,17 +3143,31 @@ public class ModelManipulationFactory {
         return uuidList;
     }
 
-    public static Map<String,Object> LineInnerConnections(Model modEQModel, Model modTPModel, Model modSVModel, List<Statement> lineTN, String cimns, List<Statement> lineTerminals, Resource resBreakerTerm1, Resource resBreakerTerm2, String cgmesVersion, Statement island, Model modelTPBD,boolean breakerStatus) {
+    //Generate UUID
+    public static Map<String,String> GetMapIDs(Statement objStmt) {
+        Map<String,String> mapIDs = new HashMap<>();
+        for (StmtIterator s = mapModel.listStatements(objStmt.getSubject(),null,(RDFNode) null); s.hasNext();) {
+            Statement stmt = s.next();
+            if (!stmt.getPredicate().equals(RDF.type)){
+                mapIDs.put(stmt.getPredicate().getLocalName(),stmt.getObject().toString());
+            }
+        }
+
+        return mapIDs;
+    }
+
+    public static Map<String,Object> LineInnerConnections(Model modEQModel, Model modTPModel, Model modSVModel, List<Statement> lineTN, String cimns, List<Statement> lineTerminals, Resource resBreakerTerm1, Resource resBreakerTerm2, String cgmesVersion, Statement island, Model modelTPBD,boolean breakerStatus,boolean impMap, Map<String,String> mapIDs) {
 
         Property cnToTN = ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode");
         Property tnToBV = ResourceFactory.createProperty(cimns, "TopologicalNode.BaseVoltage");
         Property termToTN = ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode");
         //add 2 CNs
         int side = 0;
+        boolean innerSide = true;
         List<Resource> terminalsCN = new LinkedList<>();
         terminalsCN.add(lineTerminals.get(side).getSubject());
         terminalsCN.add(resBreakerTerm1);
-        Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD);
+        Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD,impMap,mapIDs,side,innerSide);
         modEQModel = (Model) cn1Side1Map.get("modelEQ");
         modTPModel = (Model) cn1Side1Map.get("modelTP");
         modSVModel = (Model) cn1Side1Map.get("modelSV");
@@ -3049,7 +3175,7 @@ public class ModelManipulationFactory {
         Resource tn1res = ResourceFactory.createResource(cimns+ "NA");
 
         if (!breakerStatus) { // breaker is open, add also TN
-            Map<String,Object> tnMap = AddTopologicalNode(modEQModel, modTPModel, modSVModel,cimns,island,cn1res,cgmesVersion);
+            Map<String,Object> tnMap = AddTopologicalNode(modEQModel, modTPModel, modSVModel,cimns,island,cn1res,cgmesVersion,impMap,mapIDs,side,innerSide);
             tn1res = (Resource) tnMap.get("resource");
             modTPModel = (Model) tnMap.get("modelTP");
             modSVModel = (Model) tnMap.get("modelSV");
@@ -3077,7 +3203,7 @@ public class ModelManipulationFactory {
         terminalsCN = new LinkedList<>();
         terminalsCN.add(lineTerminals.get(side).getSubject());
         terminalsCN.add(resBreakerTerm2);
-        Map<String,Object> cn2Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD);
+        Map<String,Object> cn2Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD,impMap,mapIDs,side,innerSide);
         modEQModel = (Model) cn2Side1Map.get("modelEQ");
         modTPModel = (Model) cn2Side1Map.get("modelTP");
         modSVModel = (Model) cn2Side1Map.get("modelSV");
@@ -3085,7 +3211,7 @@ public class ModelManipulationFactory {
         Resource tn2res = ResourceFactory.createResource(cimns+ "NA");
 
         if (!breakerStatus) { // breaker is open, add also TN
-            Map<String,Object> tnMap = AddTopologicalNode(modEQModel, modTPModel, modSVModel,cimns,island,cn2res,cgmesVersion);
+            Map<String,Object> tnMap = AddTopologicalNode(modEQModel, modTPModel, modSVModel,cimns,island,cn2res,cgmesVersion,impMap,mapIDs,side,innerSide);
             tn2res = (Resource) tnMap.get("resource");
             modTPModel = (Model) tnMap.get("modelTP");
             modSVModel = (Model) tnMap.get("modelSV");
@@ -3120,17 +3246,18 @@ public class ModelManipulationFactory {
         return breakerConMap;
     }
 
-    public static Map<String,Object> SMInnerConnections(Model modEQModel, Model modTPModel, Model modSVModel, List<Statement> smTN, String cimns, List<Statement> smTerminals, Resource resBreakerTerm2, String cgmesVersion, Statement island, Model modelTPBD,boolean breakerStatus) {
+    public static Map<String,Object> SMInnerConnections(Model modEQModel, Model modTPModel, Model modSVModel, List<Statement> smTN, String cimns, List<Statement> smTerminals, Resource resBreakerTerm2, String cgmesVersion, Statement island, Model modelTPBD,boolean breakerStatus,boolean impMap, Map<String,String> mapIDs) {
 
         Property cnToTN = ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode");
         Property tnToBV = ResourceFactory.createProperty(cimns, "TopologicalNode.BaseVoltage");
         Property termToTN = ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode");
         //add 2 CNs
         int side = 0;
+        boolean innerSide = true;
         List<Resource> terminalsCN = new LinkedList<>();
         terminalsCN.add(smTerminals.get(side).getSubject());
         terminalsCN.add(resBreakerTerm2);
-        Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, smTN.get(side), terminalsCN, modelTPBD);
+        Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, smTN.get(side), terminalsCN, modelTPBD,impMap,mapIDs,side,innerSide);
         modEQModel = (Model) cn1Side1Map.get("modelEQ");
         modTPModel = (Model) cn1Side1Map.get("modelTP");
         modSVModel = (Model) cn1Side1Map.get("modelSV");
@@ -3138,7 +3265,7 @@ public class ModelManipulationFactory {
         Resource tn1res = ResourceFactory.createResource(cimns+ "NA");
 
         if (!breakerStatus) { // breaker is open, add also TN
-            Map<String,Object> tnMap = AddTopologicalNode(modEQModel, modTPModel, modSVModel,cimns,island,cn1res,cgmesVersion);
+            Map<String,Object> tnMap = AddTopologicalNode(modEQModel, modTPModel, modSVModel,cimns,island,cn1res,cgmesVersion,impMap,mapIDs,side,innerSide);
             tn1res = (Resource) tnMap.get("resource");
             modTPModel = (Model) tnMap.get("modelTP");
             modSVModel = (Model) tnMap.get("modelSV");
