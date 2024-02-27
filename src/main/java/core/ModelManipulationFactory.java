@@ -14,16 +14,18 @@ import javafx.scene.control.ButtonType;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import org.apache.jena.rdf.model.*;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.vocabulary.OWL;
+import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
+import org.apache.jena.vocabulary.RDFS;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import util.ExcelTools;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.util.*;
 
@@ -1839,40 +1841,40 @@ public class ModelManipulationFactory {
         for (Map.Entry<String, Model> entry : instanceDataModelMap.entrySet()) {
 
             //this is related to the save of the data
-            Set<Resource> rdfAboutList = new HashSet<>();
-            Set<Resource> rdfEnumList = new HashSet<>();
-            if ((boolean) saveProperties.get("useAboutRules")) {
-                if (profileModelMap != null) {
-                    if (profileModelMap.get(entry.getKey()).listSubjectsWithProperty(ResourceFactory.createProperty("http://iec.ch/TC57/1999/rdf-schema-extensions-19990926#stereotype"), "Description").hasNext()) {
-                        rdfAboutList = profileModelMap.get(entry.getKey()).listSubjectsWithProperty(ResourceFactory.createProperty("http://iec.ch/TC57/1999/rdf-schema-extensions-19990926#stereotype"), "Description").toSet();
-                    }
-                }
-                rdfAboutList.add(ResourceFactory.createResource(saveProperties.get("headerClassResource").toString()));
-            }
-
-            if ((boolean) saveProperties.get("useEnumRules")) {
-                if (profileModelMap != null) {
-                    for (ResIterator i = profileModelMap.get(entry.getKey()).listSubjectsWithProperty(ResourceFactory.createProperty("http://iec.ch/TC57/1999/rdf-schema-extensions-19990926#stereotype"),
-                            ResourceFactory.createProperty("http://iec.ch/TC57/NonStandard/UML#enumeration")); i.hasNext(); ) {
-                        Resource resItem = i.next();
-                        for (ResIterator j = profileModelMap.get(entry.getKey()).listSubjectsWithProperty(RDF.type, resItem); j.hasNext(); ) {
-                            Resource resItemProp = j.next();
-                            rdfEnumList.add(resItemProp);
-                        }
-                    }
-                }
-            }
-
-            if (saveProperties.containsKey("rdfAboutList")) {
-                saveProperties.replace("rdfAboutList", rdfAboutList);
-            } else {
-                saveProperties.put("rdfAboutList", rdfAboutList);
-            }
-            if (saveProperties.containsKey("rdfEnumList")) {
-                saveProperties.replace("rdfEnumList", rdfEnumList);
-            } else {
-                saveProperties.put("rdfEnumList", rdfEnumList);
-            }
+//            Set<Resource> rdfAboutList = new HashSet<>();
+//            Set<Resource> rdfEnumList = new HashSet<>();
+//            if ((boolean) saveProperties.get("useAboutRules")) {
+//                if (profileModelMap != null) {
+//                    if (profileModelMap.get(entry.getKey()).listSubjectsWithProperty(ResourceFactory.createProperty("http://iec.ch/TC57/1999/rdf-schema-extensions-19990926#stereotype"), "Description").hasNext()) {
+//                        rdfAboutList = profileModelMap.get(entry.getKey()).listSubjectsWithProperty(ResourceFactory.createProperty("http://iec.ch/TC57/1999/rdf-schema-extensions-19990926#stereotype"), "Description").toSet();
+//                    }
+//                }
+//                rdfAboutList.add(ResourceFactory.createResource(saveProperties.get("headerClassResource").toString()));
+//            }
+//
+//            if ((boolean) saveProperties.get("useEnumRules")) {
+//                if (profileModelMap != null) {
+//                    for (ResIterator i = profileModelMap.get(entry.getKey()).listSubjectsWithProperty(ResourceFactory.createProperty("http://iec.ch/TC57/1999/rdf-schema-extensions-19990926#stereotype"),
+//                            ResourceFactory.createProperty("http://iec.ch/TC57/NonStandard/UML#enumeration")); i.hasNext(); ) {
+//                        Resource resItem = i.next();
+//                        for (ResIterator j = profileModelMap.get(entry.getKey()).listSubjectsWithProperty(RDF.type, resItem); j.hasNext(); ) {
+//                            Resource resItemProp = j.next();
+//                            rdfEnumList.add(resItemProp);
+//                        }
+//                    }
+//                }
+//            }
+//
+//            if (saveProperties.containsKey("rdfAboutList")) {
+//                saveProperties.replace("rdfAboutList", rdfAboutList);
+//            } else {
+//                saveProperties.put("rdfAboutList", rdfAboutList);
+//            }
+//            if (saveProperties.containsKey("rdfEnumList")) {
+//                saveProperties.replace("rdfEnumList", rdfEnumList);
+//            } else {
+//                saveProperties.put("rdfEnumList", rdfEnumList);
+//            }
 
             if (MainController.ibBDconversion) {
                 saveProperties.replace("filename", entry.getKey());
@@ -2010,6 +2012,46 @@ public class ModelManipulationFactory {
         return modelFiles;
     }
 
+    public static Set<Resource> LoadRDFAbout(String xmlBase){
+        Set<Resource> rdfAboutList = new HashSet<>();
+        Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+        FileInputStream inputStream = (FileInputStream) InstanceDataFactory.class.getResourceAsStream("/RDFS/RDFSSerialisation.ttl");
+        if (inputStream != null) {
+            RDFDataMgr.read(model, inputStream, xmlBase, Lang.TURTLE);
+        }
+
+        for (StmtIterator it = model.listStatements(null,RDF.type, RDFS.Class); it.hasNext(); ) {
+            Statement stmt = it.next();
+            if (stmt.getSubject() == ResourceFactory.createResource(xmlBase+"RdfAbout")){
+                for (NodeIterator iter = model.listObjectsOfProperty(stmt.getSubject(), OWL2.members); iter.hasNext(); ) {
+                    RDFNode o_i = iter.next();
+                    rdfAboutList.add(ResourceFactory.createResource(o_i.toString()));
+
+                }
+            }
+        }
+        return rdfAboutList;
+    }
+    public static Set<Resource> LoadRDFEnum(String xmlBase){
+        Set<Resource> RdfEnumList = new HashSet<>();
+        Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+        FileInputStream inputStream = (FileInputStream) InstanceDataFactory.class.getResourceAsStream("/RDFS/RDFSSerialisation.ttl");
+        if (inputStream != null) {
+            RDFDataMgr.read(model, inputStream, xmlBase, Lang.TURTLE);
+        }
+
+        for (StmtIterator it = model.listStatements(null,RDF.type, RDFS.Class); it.hasNext(); ) {
+            Statement stmt = it.next();
+            if (stmt.getSubject() == ResourceFactory.createResource(xmlBase+"RdfEnum")){
+                for (NodeIterator iter = model.listObjectsOfProperty(stmt.getSubject(), OWL2.members); iter.hasNext(); ) {
+                    RDFNode o_i = iter.next();
+                    RdfEnumList.add(ResourceFactory.createResource(o_i.toString()));
+                }
+            }
+        }
+        return RdfEnumList;
+    }
+
     //Modify IGM
     public static void ModifyIGM(Map<String, Map> loadDataMap,String cgmesVersion,boolean impMap,boolean applyAllCondEq,boolean applyLine,boolean applyTrafo,boolean applySynMach,boolean expMap) throws IOException {
         String xmlBase ="";
@@ -2145,6 +2187,11 @@ public class ModelManipulationFactory {
         saveProperties.put("instanceData", "true"); //this is to only print the ID and not with namespace
         saveProperties.put("showXmlBaseDeclaration", "false");
 
+        Set<Resource> rdfAboutList = LoadRDFAbout(xmlBase);
+        Set<Resource> rdfEnumList = LoadRDFEnum(xmlBase);
+
+        saveProperties.put("rdfAboutList", rdfAboutList);
+        saveProperties.put("rdfEnumList", rdfEnumList);
         saveProperties.put("putHeaderOnTop", true);
         saveProperties.put("headerClassResource", "http://iec.ch/TC57/61970-552/ModelDescription/1#FullModel");
         saveProperties.put("extensionName", "RDF XML");
