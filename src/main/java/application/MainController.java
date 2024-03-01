@@ -427,7 +427,7 @@ public class MainController implements Initializable {
             cgmesVersion = "CGMESv3.0";
         }
 
-        if (loadDataMap.isEmpty()) {
+        /*if (loadDataMap.isEmpty()) {
             // load all profile models
             List<File> modelFiles = LoadRDFS(cgmesVersion);
             Map<String, Model> profileModelMap;
@@ -440,7 +440,7 @@ public class MainController implements Initializable {
                 throw new RuntimeException(e);
             }
             loadDataMap.put("profileModelMap", profileModelMap);
-        }
+        }*/
 
         progressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
 

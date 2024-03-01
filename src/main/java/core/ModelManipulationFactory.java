@@ -2016,7 +2016,7 @@ public class ModelManipulationFactory {
     public static Set<Resource> LoadRDFAbout(String xmlBase){
         Set<Resource> rdfAboutList = new HashSet<>();
         Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
-        FileInputStream inputStream = (FileInputStream) InstanceDataFactory.class.getResourceAsStream("/RDFS/RDFSSerialisation.ttl");
+        InputStream inputStream = InstanceDataFactory.class.getResourceAsStream("/RDFS/RDFSSerialisation.ttl");
         if (inputStream != null) {
             RDFDataMgr.read(model, inputStream, xmlBase, Lang.TURTLE);
         }
@@ -2036,7 +2036,7 @@ public class ModelManipulationFactory {
     public static Set<Resource> LoadRDFEnum(String xmlBase){
         Set<Resource> RdfEnumList = new HashSet<>();
         Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
-        FileInputStream inputStream = (FileInputStream) InstanceDataFactory.class.getResourceAsStream("/RDFS/RDFSSerialisation.ttl");
+        InputStream inputStream = InstanceDataFactory.class.getResourceAsStream("/RDFS/RDFSSerialisation.ttl");
         if (inputStream != null) {
             RDFDataMgr.read(model, inputStream, xmlBase, Lang.TURTLE);
         }
