@@ -156,7 +156,10 @@
                                         <VBox.margin>
                                             <Insets top="20.0" />
                                         </VBox.margin>
-                                        <CheckBox fx:id="fCBmodIGM" mnemonicParsing="false" onAction="#actionCBmodIGM" text="Modification of an Individual Grid Model (IGM)" />
+                                        <CheckBox fx:id="fCBmodIGM" mnemonicParsing="false" onAction="#actionCBmodIGM" text="Modification of an Individual Grid Model (IGM)">
+                                 <tooltip>
+                                    <Tooltip autoHide="true" maxWidth="-Infinity" prefWidth="300.0" text="It needs to be selected as currently only IGM modification is supported." width="100.0" wrapText="true" />
+                                 </tooltip></CheckBox>
                                         <CheckBox fx:id="fCBmodCGM" disable="true" mnemonicParsing="false" onAction="#actionCBmodCGM" text="Modification of a Common Grid Model (CGM)" />
                                         <Label text="Data exchange standard:" wrapText="true" />
                                         <ChoiceBox fx:id="fCBCGMESstd" HBox.hgrow="ALWAYS">
@@ -178,13 +181,19 @@
                                             <HBox.margin>
                                                 <Insets right="10.0" />
                                             </HBox.margin>
+                                 <tooltip>
+                                    <Tooltip autoHide="true" maxWidth="-Infinity" prefWidth="300.0" text="Select all the files that belong to the IGM or CGM together with the boundary." wrapText="true" />
+                                 </tooltip>
                                         </Button>
                                     </HBox>
                                     <HBox spacing="10.0">
                                         <padding>
                                             <Insets left="5.0" right="5.0" top="5.0" />
                                         </padding>
-                                        <CheckBox fx:id="fCBmapFile" mnemonicParsing="false" onAction="#actionImpMapping" text="Import mapping file" />
+                                        <CheckBox fx:id="fCBmapFile" mnemonicParsing="false" onAction="#actionImpMapping" text="Import mapping file">
+                                 <tooltip>
+                                    <Tooltip autoHide="true" maxWidth="-Infinity" prefWidth="300.0" text="Select this only if you already have the mapping file produced in previous run of the app or constructed manually.." wrapText="true" />
+                                 </tooltip></CheckBox>
                                         <TextField fx:id="fPathMapFile" editable="false" HBox.hgrow="ALWAYS" />
                                         <Button fx:id="fBrowseMapFile" disable="true" mnemonicParsing="false" onAction="#actionBrowseMapFile" text="Browse">
                                             <HBox.margin>
@@ -204,13 +213,23 @@
                                                 <Insets />
                                             </HBox.margin>
                                         </CheckBox>
-                                        <CheckBox fx:id="fCBlines" mnemonicParsing="false" onAction="#actionCBapplyLines" text="Apply to Lines" />
+                                        <CheckBox fx:id="fCBlines" mnemonicParsing="false" onAction="#actionCBapplyLines" text="Apply to Lines">
+                                 <tooltip>
+                                    <Tooltip autoHide="true" maxWidth="-Infinity" prefWidth="300.0" text="Select if you want to apply to Lines (ACLineSegments). Note that Line with multiple secments is not yet supported." wrapText="true" />
+                                 </tooltip></CheckBox>
                                         <CheckBox fx:id="fCBrafo" disable="true" mnemonicParsing="false" onAction="#actionCBapplyPT" text="Apply to PowerTransformer" />
                                         <CheckBox fx:id="fcbSM" mnemonicParsing="false" onAction="#actionCBApplySM" text="Apply to SynchronousMachine">
                                             <HBox.margin>
                                                 <Insets />
                                             </HBox.margin>
+                                 <tooltip>
+                                    <Tooltip autoHide="true" maxWidth="-Infinity" prefWidth="300.0" text="Select if you want to add breakers to synchronous machines." wrapText="true" />
+                                 </tooltip>
                                         </CheckBox>
+                              <CheckBox fx:id="fcbApplyEQmap" mnemonicParsing="false" onAction="#actionCBApplySM" text="Apply only for equipment in the mapping file">
+                                 <tooltip>
+                                    <Tooltip autoHide="true" maxWidth="-Infinity" prefWidth="300.0" text="Select if you would like to add switches only for elements that are listed in the mapping file. Note that you still need to use &quot;Apply to Lines&quot; and &quot;Apply to SynchronousMachine&quot; and if not selected then nothing will be added. If this checkbox is not selected mapping file will be used and IDs will be persistent for elements part of the mapping table. If an element is not present in the mappiing table a random ID will be generated. " wrapText="true" />
+                                 </tooltip></CheckBox>
                                     </HBox>
                                     <HBox spacing="10.0" VBox.vgrow="ALWAYS">
                                         <padding>
@@ -220,6 +239,9 @@
                                             <HBox.margin>
                                                 <Insets />
                                             </HBox.margin>
+                                 <tooltip>
+                                    <Tooltip autoHide="true" maxWidth="-Infinity" prefWidth="300.0" text="If this is selected a xls file that contains the mapping will be saved." wrapText="true" />
+                                 </tooltip>
                                         </CheckBox>
                                     </HBox>
                                     <HBox alignment="BOTTOM_LEFT" nodeOrientation="RIGHT_TO_LEFT" prefHeight="72.0" prefWidth="1273.0" spacing="10.0">
@@ -283,6 +305,6 @@
                 </padding>
             </ProgressBar>
         </Pane>
-        <Label font="$x3" text="Version: 2024.0" HBox.hgrow="NEVER" />
+        <Label font="$x3" text="Version: 2024.1" HBox.hgrow="NEVER" />
     </HBox>
 </VBox>

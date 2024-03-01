@@ -16,7 +16,6 @@ import javafx.stage.FileChooser;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.vocabulary.OWL;
 import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
@@ -2016,7 +2015,7 @@ public class ModelManipulationFactory {
     public static Set<Resource> LoadRDFAbout(String xmlBase){
         Set<Resource> rdfAboutList = new HashSet<>();
         Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
-        InputStream inputStream = InstanceDataFactory.class.getResourceAsStream("/RDFS/RDFSSerialisation.ttl");
+        InputStream inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/serialisation_cgmes_2415_enum_id_about.ttl");
         if (inputStream != null) {
             RDFDataMgr.read(model, inputStream, xmlBase, Lang.TURTLE);
         }
@@ -2036,7 +2035,7 @@ public class ModelManipulationFactory {
     public static Set<Resource> LoadRDFEnum(String xmlBase){
         Set<Resource> RdfEnumList = new HashSet<>();
         Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
-        InputStream inputStream = InstanceDataFactory.class.getResourceAsStream("/RDFS/RDFSSerialisation.ttl");
+        InputStream inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/serialisation_cgmes_2415_enum_id_about.ttl");
         if (inputStream != null) {
             RDFDataMgr.read(model, inputStream, xmlBase, Lang.TURTLE);
         }
@@ -2054,7 +2053,7 @@ public class ModelManipulationFactory {
     }
 
     //Modify IGM
-    public static void ModifyIGM(Map<String, Map> loadDataMap,String cgmesVersion,boolean impMap,boolean applyAllCondEq,boolean applyLine,boolean applyTrafo,boolean applySynMach,boolean expMap) throws IOException {
+    public static void ModifyIGM(Map<String, Map> loadDataMap,String cgmesVersion,boolean impMap,boolean applyAllCondEq,boolean applyLine,boolean applyTrafo,boolean applySynMach,boolean expMap, boolean applyEQmap) throws IOException {
         String xmlBase ="";
         String cimns = "";
         if (cgmesVersion.equals("CGMESv3.0")) {
@@ -2102,7 +2101,7 @@ public class ModelManipulationFactory {
                 for (int i = 1; i < inputXLSdata.size(); i++) {
                     LinkedList<?> row = (LinkedList<?>) inputXLSdata.get(i);
                     Resource subject = ResourceFactory.createResource(cimns+row.get(1).toString());
-                    RDFNode object = ResourceFactory.createPlainLiteral(row.getFirst().toString());
+                    RDFNode object = ResourceFactory.createResource(cimns+row.getFirst().toString());
                     Statement stmt = ResourceFactory.createStatement(subject,RDF.type,object);
                     mapModel.add(stmt);
                     int k = 0;
@@ -2246,27 +2245,33 @@ public class ModelManipulationFactory {
         if (applyLine){
             //find all ACLineSegments
             //for each of the line segments add 2 breakers
-            for (StmtIterator s = modEQModel.listStatements(null,RDF.type,ResourceFactory.createProperty(cimns,"ACLineSegment")); s.hasNext();){
+            RDFNode aclinesegment = ResourceFactory.createProperty(cimns,"ACLineSegment");
+            for (StmtIterator s = modEQModel.listStatements(null,RDF.type,aclinesegment); s.hasNext();){
                 Statement stmt = s.next();
+                if (applyEQmap) {//only look at the xls map
+                    if (!mapModel.listStatements(stmt.getSubject(),RDF.type,aclinesegment).hasNext()) {// not in the map then skip the rest
+                        continue;
+                    }
+                }
                 //check if there is Line container. If yes, do a check if there are Lines with more than 1 segment and issue a warning
                 // if not process the line segments
 
                 // get the ID of the Line if there is a line
                 List<Statement> LineList;
-                if (modEQModel.listStatements(stmt.getSubject(),ResourceFactory.createProperty(cimns,"Equipment.EquipmentContainer"),(RDFNode) null).hasNext()) {
+                if (modEQModel.listStatements(stmt.getSubject(), ResourceFactory.createProperty(cimns, "Equipment.EquipmentContainer"), (RDFNode) null).hasNext()) {
                     Statement LineStmt = modEQModel.listStatements(stmt.getSubject(), ResourceFactory.createProperty(cimns, "Equipment.EquipmentContainer"), (RDFNode) null).next();
-                    LineList = modEQModel.listStatements(null,ResourceFactory.createProperty(cimns,"Equipment.EquipmentContainer"),LineStmt.getSubject()).toList();
-                    if (LineList.size()>1){
+                    LineList = modEQModel.listStatements(null, ResourceFactory.createProperty(cimns, "Equipment.EquipmentContainer"), LineStmt.getSubject()).toList();
+                    if (LineList.size() > 1) {
                         //TODO not supported case, todo the warning
                         //more than one segment in a Line - print warning
                         continue;
                     }
-                }else{
+                } else {
                     //this is the case where there is no Line container for a given ACLineSegment
                     LineList = new LinkedList<>();
                     LineList.add(stmt);
                 }
-                Map<String,Object> breakerLineMap = AddBreakerLine(LineList,modelEQ,modelTP,modelSV,modelSSH,modEQModel,modSSHModel, modSVModel,modTPModel,cimns,cgmesVersion, modelTPBD,expMapToXls,expMap,impMap);
+                Map<String, Object> breakerLineMap = AddBreakerLine(LineList, modelEQ, modelTP, modelSV, modelSSH, modEQModel, modSSHModel, modSVModel, modTPModel, cimns, cgmesVersion, modelTPBD, expMapToXls, expMap, impMap);
                 modEQModel = (Model) breakerLineMap.get("modEQModel");
                 modTPModel = (Model) breakerLineMap.get("modTPModel");
                 modSVModel = (Model) breakerLineMap.get("modSVModel");
@@ -2277,8 +2282,14 @@ public class ModelManipulationFactory {
         if (applySynMach){
             // find all SynchronousMachines
             //for each of the machine add 1 breaker
-            for (StmtIterator s = modEQModel.listStatements(null,RDF.type,ResourceFactory.createProperty(cimns,"SynchronousMachine")); s.hasNext();){
+            RDFNode syncmachine = ResourceFactory.createProperty(cimns,"SynchronousMachine");
+            for (StmtIterator s = modEQModel.listStatements(null,RDF.type,syncmachine); s.hasNext();){
                 Statement stmt = s.next();
+                if (applyEQmap) {//only look at the xls map
+                    if (!mapModel.listStatements(stmt.getSubject(),RDF.type,syncmachine).hasNext()) {// not in the map then skip the rest
+                        continue;
+                    }
+                }
 
                 // do the routine for cases when there is one ACLineSegment in a Line
                 Map<String,Object> breakerLineMap = AddBreakerSynchronousMachine(stmt,modelEQ,modelTP,modelSV,modelSSH,modEQModel,modSSHModel, modSVModel,modTPModel,cimns,cgmesVersion, modelTPBD,expMapToXls,expMap,impMap);

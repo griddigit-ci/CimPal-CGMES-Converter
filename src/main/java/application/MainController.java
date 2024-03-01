@@ -98,6 +98,8 @@ public class MainController implements Initializable {
     private Button fBrowse;
     @FXML
     private  CheckBox fcbEQonly;
+    @FXML
+    private CheckBox fcbApplyEQmap;
 
 
 
@@ -450,9 +452,10 @@ public class MainController implements Initializable {
         boolean applyTrafo = fCBrafo.isSelected();
         boolean applySynMach = fcbSM.isSelected();
         boolean expMap = fcbexportMapfile.isSelected();
+        boolean applyEQmap = fcbApplyEQmap.isSelected();
 
         if (fCBmodIGM.isSelected()){
-            ModelManipulationFactory.ModifyIGM(loadDataMap,cgmesVersion,impMap,applyAllCondEq,applyLine,applyTrafo,applySynMach,expMap);
+            ModelManipulationFactory.ModifyIGM(loadDataMap,cgmesVersion,impMap,applyAllCondEq,applyLine,applyTrafo,applySynMach,expMap,applyEQmap);
         }else if (fCBmodCGM.isSelected()){
             ModelManipulationFactory.ModifyCGM(loadDataMap,cgmesVersion,impMap,applyAllCondEq,applyLine,applyTrafo,applySynMach,expMap);
         }
