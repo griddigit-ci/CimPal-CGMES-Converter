@@ -2012,14 +2012,21 @@ public class ModelManipulationFactory {
         return modelFiles;
     }
 
-    public static Set<Resource> LoadRDFAbout(String xmlBase){
+    public static Set<Resource> LoadRDFAbout(String xmlBase, String cgmesVersion) throws FileNotFoundException {
         Set<Resource> rdfAboutList = new HashSet<>();
         Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
-        InputStream inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/serialisation_cgmes_2415_enum_id_about.ttl");
+        InputStream inputStream = null;
+        if (cgmesVersion.equals("CGMESv3.0")){
+            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/CGMES_v3.0.0_RDFSSerialisation.ttl");
+        } else if (cgmesVersion.equals("CGMESv2.4")) {
+            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/CGMES_v2.4.15_RDFSSerialisation.ttl");
+        }
         if (inputStream != null) {
             RDFDataMgr.read(model, inputStream, xmlBase, Lang.TURTLE);
         }
-
+        else {
+            throw new FileNotFoundException("File not found for serialization.");
+        }
         for (StmtIterator it = model.listStatements(null,RDF.type, RDFS.Class); it.hasNext(); ) {
             Statement stmt = it.next();
             if (stmt.getSubject() == ResourceFactory.createResource(xmlBase+"RdfAbout")){
@@ -2032,12 +2039,20 @@ public class ModelManipulationFactory {
         }
         return rdfAboutList;
     }
-    public static Set<Resource> LoadRDFEnum(String xmlBase){
+    public static Set<Resource> LoadRDFEnum(String xmlBase, String cgmesVersion) throws FileNotFoundException {
         Set<Resource> RdfEnumList = new HashSet<>();
         Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
-        InputStream inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/serialisation_cgmes_2415_enum_id_about.ttl");
+        InputStream inputStream = null;
+        if (cgmesVersion.equals("CGMESv3.0")){
+            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/CGMES_v3.0.0_RDFSSerialisation.ttl");
+        } else if (cgmesVersion.equals("CGMESv2.4")) {
+            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/CGMES_v2.4.15_RDFSSerialisation.ttl");
+        }
         if (inputStream != null) {
             RDFDataMgr.read(model, inputStream, xmlBase, Lang.TURTLE);
+        }
+        else {
+            throw new FileNotFoundException("File not found for serialization.");
         }
 
         for (StmtIterator it = model.listStatements(null,RDF.type, RDFS.Class); it.hasNext(); ) {
@@ -2187,8 +2202,8 @@ public class ModelManipulationFactory {
         saveProperties.put("instanceData", "true"); //this is to only print the ID and not with namespace
         saveProperties.put("showXmlBaseDeclaration", "false");
 
-        Set<Resource> rdfAboutList = LoadRDFAbout(xmlBase);
-        Set<Resource> rdfEnumList = LoadRDFEnum(xmlBase);
+        Set<Resource> rdfAboutList = LoadRDFAbout(xmlBase, cgmesVersion);
+        Set<Resource> rdfEnumList = LoadRDFEnum(xmlBase, cgmesVersion);
 
         saveProperties.put("rdfAboutList", rdfAboutList);
         saveProperties.put("rdfEnumList", rdfEnumList);
