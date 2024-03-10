@@ -2021,9 +2021,9 @@ public class ModelManipulationFactory {
         Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
         InputStream inputStream = null;
         if (cgmesVersion.equals("CGMESv3.0")){
-            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/CGMES_v3.0.0_RDFSSerialisation.ttl");
+            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/Serialization_cgmes_v300_enum_id_about.ttl");
         } else if (cgmesVersion.equals("CGMESv2.4")) {
-            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/CGMES_v2.4.15_RDFSSerialisation.ttl");
+            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/Serialization_cgmes_v2415_enum_id_about.ttl");
         }
         if (inputStream != null) {
             RDFDataMgr.read(model, inputStream, xmlBase, Lang.TURTLE);
@@ -2048,9 +2048,9 @@ public class ModelManipulationFactory {
         Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
         InputStream inputStream = null;
         if (cgmesVersion.equals("CGMESv3.0")){
-            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/CGMES_v3.0.0_RDFSSerialisation.ttl");
+            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/Serialization_cgmes_v300_enum_id_about.ttl");
         } else if (cgmesVersion.equals("CGMESv2.4")) {
-            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/CGMES_v2.4.15_RDFSSerialisation.ttl");
+            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/Serialization_cgmes_v2415_enum_id_about.ttl");
         }
         if (inputStream != null) {
             RDFDataMgr.read(model, inputStream, xmlBase, Lang.TURTLE);
