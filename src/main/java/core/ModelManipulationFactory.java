@@ -1120,6 +1120,8 @@ public class ModelManipulationFactory {
         saveProperties.put("extensionName", "RDF XML");
         saveProperties.put("fileExtension", "*.xml");
         saveProperties.put("fileDialogTitle", "Save RDF XML for");
+        saveProperties.put("sortRDF", "true");
+        saveProperties.put("sortRDFprefix", "false"); // if true the sorting is on the prefix, if false on the localName
         //RDFFormat rdfFormat=RDFFormat.RDFXML;
         //RDFFormat rdfFormat=RDFFormat.RDFXML_PLAIN;
         //RDFFormat rdfFormat = RDFFormat.RDFXML_ABBREV;
@@ -1248,6 +1250,8 @@ public class ModelManipulationFactory {
         saveProperties.put("extensionName", "RDF XML");
         saveProperties.put("fileExtension", "*.xml");
         saveProperties.put("fileDialogTitle", "Save RDF XML for");
+        saveProperties.put("sortRDF", "true");
+        saveProperties.put("sortRDFprefix", "false"); // if true the sorting is on the prefix, if false on the localName
         //RDFFormat rdfFormat=RDFFormat.RDFXML;
         //RDFFormat rdfFormat=RDFFormat.RDFXML_PLAIN;
         //RDFFormat rdfFormat = RDFFormat.RDFXML_ABBREV;
