@@ -305,6 +305,6 @@
                 </padding>
             </ProgressBar>
         </Pane>
-        <Label font="$x3" text="Version: 2024.1" HBox.hgrow="NEVER" />
+        <Label font="$x3" text="Version: 2024.2" HBox.hgrow="NEVER" />
     </HBox>
 </VBox>

@@ -117,7 +117,7 @@
   </dependencies>
   <properties>
     <jena.version>4.10.0</jena.version>
-    <cimpal.version>2024.1.0.0</cimpal.version>
+    <cimpal.version>2024.2.0.0</cimpal.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <log4j.version>2.12.1</log4j.version>
     <javafx.version>21</javafx.version>
