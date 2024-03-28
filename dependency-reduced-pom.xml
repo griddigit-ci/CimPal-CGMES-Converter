@@ -80,11 +80,11 @@
               <manifest />
               <icon />
               <jre>
-                <path>%JAVA_HOME%;%PATH%</path>
-                <requiresJdk>false</requiresJdk>
-                <requires64Bit>false</requires64Bit>
-                <minVersion>21</minVersion>
-                <maxVersion>22</maxVersion>
+                <path>C:\Program Files\Java\jdk-21\bin</path>
+                <requiresJdk>true</requiresJdk>
+                <requires64Bit>true</requires64Bit>
+                <minVersion />
+                <maxVersion />
               </jre>
               <versionInfo>
                 <fileVersion>${cimpal.version}</fileVersion>

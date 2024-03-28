@@ -1844,6 +1844,20 @@ public class ModelManipulationFactory {
 
         for (Map.Entry<String, Model> entry : instanceDataModelMap.entrySet()) {
 
+            //TODO fix this to be more universal
+            String profileURI = switch (entry.getKey()) {
+                case "EQ" -> "http://entsoe.eu/CIM/EquipmentCore/3/1#";
+                case "SSH" -> "http://entsoe.eu/CIM/SteadyStateHypothesis/1/1#";
+                case "TP" -> "http://entsoe.eu/CIM/Topology/4/1#";
+                case "SV" -> "http://entsoe.eu/CIM/StateVariables/4/1#";
+                default -> null;
+            };
+
+
+            Set<Resource> rdfAboutList = LoadRDFAbout(profileURI, "CGMESv2.4");
+            Set<Resource> rdfEnumList = LoadRDFEnum(profileURI, "CGMESv2.4");
+            rdfAboutList.add(ResourceFactory.createResource(saveProperties.get("headerClassResource").toString()));
+
             //this is related to the save of the data
 //            Set<Resource> rdfAboutList = new HashSet<>();
 //            Set<Resource> rdfEnumList = new HashSet<>();
@@ -1869,16 +1883,16 @@ public class ModelManipulationFactory {
 //                }
 //            }
 //
-//            if (saveProperties.containsKey("rdfAboutList")) {
-//                saveProperties.replace("rdfAboutList", rdfAboutList);
-//            } else {
-//                saveProperties.put("rdfAboutList", rdfAboutList);
-//            }
-//            if (saveProperties.containsKey("rdfEnumList")) {
-//                saveProperties.replace("rdfEnumList", rdfEnumList);
-//            } else {
-//                saveProperties.put("rdfEnumList", rdfEnumList);
-//            }
+            if (saveProperties.containsKey("rdfAboutList")) {
+                saveProperties.replace("rdfAboutList", rdfAboutList);
+            } else {
+                saveProperties.put("rdfAboutList", rdfAboutList);
+            }
+            if (saveProperties.containsKey("rdfEnumList")) {
+                saveProperties.replace("rdfEnumList", rdfEnumList);
+            } else {
+                saveProperties.put("rdfEnumList", rdfEnumList);
+            }
 
             if (MainController.ibBDconversion) {
                 saveProperties.replace("filename", entry.getKey());
@@ -2016,9 +2030,9 @@ public class ModelManipulationFactory {
         return modelFiles;
     }
 
-    public static Set<Resource> LoadRDFAbout(String xmlBase, String cgmesVersion) throws FileNotFoundException {
+    public static Set<Resource> LoadRDFAbout(String profileURI, String cgmesVersion) throws FileNotFoundException {
         Set<Resource> rdfAboutList = new HashSet<>();
-        Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+        Model model = ModelFactory.createDefaultModel();
         InputStream inputStream = null;
         if (cgmesVersion.equals("CGMESv3.0")){
             inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/Serialization_cgmes_v300_enum_id_about.ttl");
@@ -2026,26 +2040,26 @@ public class ModelManipulationFactory {
             inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/Serialization_cgmes_v2415_enum_id_about.ttl");
         }
         if (inputStream != null) {
-            RDFDataMgr.read(model, inputStream, xmlBase, Lang.TURTLE);
+            RDFDataMgr.read(model, inputStream,"", Lang.TURTLE);
         }
         else {
             throw new FileNotFoundException("File not found for serialization.");
         }
         for (StmtIterator it = model.listStatements(null,RDF.type, RDFS.Class); it.hasNext(); ) {
             Statement stmt = it.next();
-            if (stmt.getSubject() == ResourceFactory.createResource(xmlBase+"RdfAbout")){
+            if (stmt.getSubject().equals(ResourceFactory.createResource(profileURI+"RdfAbout"))){
                 for (NodeIterator iter = model.listObjectsOfProperty(stmt.getSubject(), OWL2.members); iter.hasNext(); ) {
                     RDFNode o_i = iter.next();
-                    rdfAboutList.add(ResourceFactory.createResource(o_i.toString()));
+                    rdfAboutList.add(o_i.asResource());
 
                 }
             }
         }
         return rdfAboutList;
     }
-    public static Set<Resource> LoadRDFEnum(String xmlBase, String cgmesVersion) throws FileNotFoundException {
+    public static Set<Resource> LoadRDFEnum(String profileURI, String cgmesVersion) throws FileNotFoundException {
         Set<Resource> RdfEnumList = new HashSet<>();
-        Model model = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+        Model model = ModelFactory.createDefaultModel();
         InputStream inputStream = null;
         if (cgmesVersion.equals("CGMESv3.0")){
             inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/Serialization_cgmes_v300_enum_id_about.ttl");
@@ -2053,7 +2067,7 @@ public class ModelManipulationFactory {
             inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/Serialization_cgmes_v2415_enum_id_about.ttl");
         }
         if (inputStream != null) {
-            RDFDataMgr.read(model, inputStream, xmlBase, Lang.TURTLE);
+            RDFDataMgr.read(model, inputStream, "", Lang.TURTLE);
         }
         else {
             throw new FileNotFoundException("File not found for serialization.");
@@ -2061,10 +2075,10 @@ public class ModelManipulationFactory {
 
         for (StmtIterator it = model.listStatements(null,RDF.type, RDFS.Class); it.hasNext(); ) {
             Statement stmt = it.next();
-            if (stmt.getSubject() == ResourceFactory.createResource(xmlBase+"RdfEnum")){
+            if (stmt.getSubject().equals(ResourceFactory.createResource(profileURI+"RdfEnum"))){
                 for (NodeIterator iter = model.listObjectsOfProperty(stmt.getSubject(), OWL2.members); iter.hasNext(); ) {
                     RDFNode o_i = iter.next();
-                    RdfEnumList.add(ResourceFactory.createResource(o_i.toString()));
+                    RdfEnumList.add(o_i.asResource());
                 }
             }
         }
@@ -2399,17 +2413,16 @@ public class ModelManipulationFactory {
     }
 
     //Logic breaker status
-    public static boolean breakerStatusLogic(Model modelSSH, List<Statement> terminalsStmt, String cimns) {
+    public static boolean breakerStatusLogic(Model modelSSH, Statement terminalsStmt, String cimns) {
         boolean breakerStatus = true;
-        //TODO have support for the open ended equipment.
-        //assumes that we do not have open ended branches
-        for (Statement term : terminalsStmt) {
-            Statement tnStmt = modelSSH.listStatements(term.getSubject(), ResourceFactory.createProperty(cimns, "ACDCTerminal.connected"), (RDFNode) null).next();
+        //commented lines are to be able to consider the open ended branches
+        //for (Statement term : terminalsStmt) {
+            Statement tnStmt = modelSSH.listStatements(terminalsStmt.getSubject(), ResourceFactory.createProperty(cimns, "ACDCTerminal.connected"), (RDFNode) null).next();
             if (!tnStmt.getObject().asLiteral().getBoolean()) {
                 breakerStatus = false;
-                break;
+                //break;
             }
-        }
+        //}
         return breakerStatus;
     }
 
@@ -2486,6 +2499,7 @@ public class ModelManipulationFactory {
     //Add Breaker on a SynchronousMachine
     public static Map<String,Object> AddBreakerSynchronousMachine(Statement SMstatement,Model modelEQ, Model modelTP, Model modelSV,Model modelSSH,Model modEQModel,Model modSSHModel, Model modSVModel, Model modTPModel,String cimns, String cgmesVersion, Model modelTPBD,Map<String,List> expMapToXls, boolean expMap,boolean impMap) {
 
+        RDFNode termObj = ResourceFactory.createProperty(cimns,"Terminal"); //TODO check if needed
         Map<String,String> mapIDs = null;
         if (impMap){
             mapIDs = GetMapIDs(SMstatement);
@@ -2502,7 +2516,7 @@ public class ModelManipulationFactory {
         }
         //logic for the breaker status - if true the synchronous machine is in operation, if false it is disconnected
         // get breaker status
-        boolean breakerStatus = breakerStatusLogic(modelSSH, smTerminals,cimns);
+        boolean breakerStatus = breakerStatusLogic(modelSSH, smTerminals.getFirst(),cimns);
 
         // originTN is one of the list lineTN for which breaker and CN/TN are added it is used to sort out the containment
 
@@ -2556,6 +2570,7 @@ public class ModelManipulationFactory {
         //remove the old connection to the TN
         //modTPModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(),termToTN,lineTN.get(side).getObject()));
         //add the term 1 to the TN
+        modTPModel.add(ResourceFactory.createStatement(resBreakerTerm1, RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
         modTPModel.add(ResourceFactory.createStatement(resBreakerTerm1,termToTN,smTN.get(side).getObject()));
 
         if (modTPModel.listStatements(null, cnToTn, smTN.getFirst().getObject()).hasNext()) {//there is a connectivity node at side 1
@@ -2682,6 +2697,7 @@ public class ModelManipulationFactory {
     //Add Breaker on a line
     public static Map<String,Object> AddBreakerLine(List<Statement> lineList,Model modelEQ, Model modelTP, Model modelSV,Model modelSSH,Model modEQModel,Model modSSHModel, Model modSVModel, Model modTPModel,String cimns, String cgmesVersion, Model modelTPBD,Map<String,List> expMapToXls, boolean expMap, boolean impMap) {
 
+        RDFNode termObj = ResourceFactory.createProperty(cimns,"Terminal"); //TODO check if needed
         Map<String,String> mapIDs = null;
         if (impMap){
             mapIDs = GetMapIDs(lineList.getFirst());
@@ -2692,36 +2708,59 @@ public class ModelManipulationFactory {
         List<Statement> lineTerminals = GetElementTerminals(modelEQ,lineList.getFirst(),cimns);
         List<Statement> lineCN = GetElementConnectivityNodes(modelEQ, lineTerminals, cimns);
         List<Statement> lineTN= GetElementTopologicalNodes(modelTP, lineTerminals, lineCN, cimns);
+
+        List<Statement> tieFlowList = modEQModel.listStatements(null, RDF.type, ResourceFactory.createProperty(cimns, "TieFlow")).toList();
+        Property tieToTerminal = ResourceFactory.createProperty(cimns, "TieFlow.Terminal");
+
+
         Statement island;
         if (modelSV.listStatements(null,ResourceFactory.createProperty(cimns,"TopologicalIsland.TopologicalNodes"),lineTN.getFirst().getObject()).hasNext()) {
             island = modelSV.listStatements(null, ResourceFactory.createProperty(cimns, "TopologicalIsland.TopologicalNodes"), lineTN.getFirst().getObject()).next();
         }else{
             island = modelSV.listStatements(null, RDF.type,ResourceFactory.createProperty(cimns, "TopologicalIsland")).next();
         }
+
+        // check if TNs are boundary
+        //check for side 1
+        boolean side1TNboundaryDoBreaker = !modelTPBD.listStatements(lineTN.getFirst().getObject().asResource(), RDF.type, ResourceFactory.createProperty(cimns, "TopologicalNode")).hasNext();
+
+        //check for side 2
+        boolean side2TNboundaryDoBreaker = !modelTPBD.listStatements(lineTN.get(1).getObject().asResource(), RDF.type, ResourceFactory.createProperty(cimns, "TopologicalNode")).hasNext();
+
         //logic for the breaker status - if true the line is in operation, if false it is disconnected
         // if it is connected - no need to create TN, just CN; if not connected TN is needed
-        boolean breakerStatus = breakerStatusLogic(modelSSH, lineTerminals,cimns);
+        boolean breaker1Status = breakerStatusLogic(modelSSH, lineTerminals.getFirst(), cimns);
 
         //create breakers
         //create breaker 1
         int breakerNumber = 1;
-        Map<String,Object> breaker1Map = AddBreaker(modEQModel, modSSHModel, modSVModel, cimns, breakerStatus, cgmesVersion,impMap,mapIDs,breakerNumber);
-        Resource resBreaker1Term1 = (Resource) breaker1Map.get("resourceTerm1");
-        Resource resBreaker1Term2 = (Resource) breaker1Map.get("resourceTerm2");
-        Resource resBreaker1 = (Resource) breaker1Map.get("breakerRes");
-        modEQModel = (Model) breaker1Map.get("modelEQ");
-        modSSHModel = (Model) breaker1Map.get("modelSSH");
-        modSVModel = (Model) breaker1Map.get("modelSV");
-
+        Resource resBreaker1Term1 = ResourceFactory.createResource("http://res.eu#NA");
+        Resource resBreaker1Term2 = ResourceFactory.createResource("http://res.eu#NA");
+        Resource resBreaker1 = ResourceFactory.createResource("http://res.eu#NA");
+        if (side1TNboundaryDoBreaker) {
+            Map<String, Object> breaker1Map = AddBreaker(modEQModel, modSSHModel, modSVModel, cimns, breaker1Status, cgmesVersion, impMap, mapIDs, breakerNumber);
+            resBreaker1Term1 = (Resource) breaker1Map.get("resourceTerm1");
+            resBreaker1Term2 = (Resource) breaker1Map.get("resourceTerm2");
+            resBreaker1 = (Resource) breaker1Map.get("breakerRes");
+            modEQModel = (Model) breaker1Map.get("modelEQ");
+            modSSHModel = (Model) breaker1Map.get("modelSSH");
+            modSVModel = (Model) breaker1Map.get("modelSV");
+        }
         //create breaker 2
         breakerNumber = 2;
-        Map<String,Object> breaker2Map = AddBreaker(modEQModel, modSSHModel, modSVModel, cimns, breakerStatus, cgmesVersion,impMap,mapIDs,breakerNumber);
-        Resource resBreaker2Term1 = (Resource) breaker2Map.get("resourceTerm1");
-        Resource resBreaker2Term2 = (Resource) breaker2Map.get("resourceTerm2");
-        Resource resBreaker2 = (Resource) breaker2Map.get("breakerRes");
-        modEQModel = (Model) breaker2Map.get("modelEQ");
-        modSSHModel = (Model) breaker2Map.get("modelSSH");
-        modSVModel = (Model) breaker2Map.get("modelSV");
+        boolean breaker2Status = breakerStatusLogic(modelSSH, lineTerminals.get(1),cimns);
+        Resource resBreaker2Term1 = ResourceFactory.createResource("http://res.eu#NA");
+        Resource resBreaker2Term2 = ResourceFactory.createResource("http://res.eu#NA");
+        Resource resBreaker2 = ResourceFactory.createResource("http://res.eu#NA");
+        if (side2TNboundaryDoBreaker) {
+            Map<String, Object> breaker2Map = AddBreaker(modEQModel, modSSHModel, modSVModel, cimns, breaker2Status, cgmesVersion, impMap, mapIDs, breakerNumber);
+            resBreaker2Term1 = (Resource) breaker2Map.get("resourceTerm1");
+            resBreaker2Term2 = (Resource) breaker2Map.get("resourceTerm2");
+            resBreaker2 = (Resource) breaker2Map.get("breakerRes");
+            modEQModel = (Model) breaker2Map.get("modelEQ");
+            modSSHModel = (Model) breaker2Map.get("modelSSH");
+            modSVModel = (Model) breaker2Map.get("modelSV");
+        }
 
         //add container for the breaker
         RDFNode tnContainer;
@@ -2735,7 +2774,9 @@ public class ModelManipulationFactory {
             tnContainer=ResourceFactory.createProperty(cimns, "_NoContainer");
             //TODO issue warning
         }
-        modEQModel.add(ResourceFactory.createStatement(resBreaker1, eqToEQcontainer, tnContainer));
+        if (side1TNboundaryDoBreaker) {
+            modEQModel.add(ResourceFactory.createStatement(resBreaker1, eqToEQcontainer, tnContainer));
+        }
 
         if (modelTP.listStatements(lineTN.get(1).getObject().asResource(),tnToCNcontainer,(RDFNode) null).hasNext()) {
             tnContainer = modelTP.listStatements(lineTN.get(1).getObject().asResource(), tnToCNcontainer, (RDFNode) null).next().getObject();
@@ -2745,10 +2786,12 @@ public class ModelManipulationFactory {
             tnContainer=ResourceFactory.createProperty(cimns, "_NoContainer");
             //TODO issue warning
         }
-        modEQModel.add(ResourceFactory.createStatement(resBreaker2, eqToEQcontainer, tnContainer));
+        if (side2TNboundaryDoBreaker) {
+            modEQModel.add(ResourceFactory.createStatement(resBreaker2, eqToEQcontainer, tnContainer));
+        }
 
         //manage inner connections
-        Map<String, Object> innerConMap = LineInnerConnections(modEQModel,modTPModel,modSVModel,lineTN,cimns, lineTerminals,resBreaker1Term2,resBreaker2Term2,cgmesVersion,island,modelTPBD,breakerStatus,impMap,mapIDs);
+        Map<String, Object> innerConMap = LineInnerConnections(modEQModel,modTPModel,modSVModel,lineTN,cimns, lineTerminals,resBreaker1Term2,resBreaker2Term2,cgmesVersion,island,modelTPBD,breaker1Status, breaker2Status, impMap,mapIDs,side1TNboundaryDoBreaker,side2TNboundaryDoBreaker);
         modEQModel = (Model) innerConMap.get("modEQModel");
         modTPModel = (Model) innerConMap.get("modTPModel");
         modSVModel = (Model) innerConMap.get("modSVModel");
@@ -2760,7 +2803,7 @@ public class ModelManipulationFactory {
         //check Connectivity nodes and Topological nodes at the two ends and connect
         int side = 0;
         boolean innerSide = false;
-        Resource cn1res;
+        Resource cn1res = ResourceFactory.createResource("http://res.eu#NA");
         Property cnToTn = ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode");
         Property termToCn = ResourceFactory.createProperty(cimns, "Terminal.ConnectivityNode");
         Property termToConEQ = ResourceFactory.createProperty(cimns, "Terminal.ConductingEquipment");
@@ -2768,88 +2811,111 @@ public class ModelManipulationFactory {
         List<Statement> termList = GetTerminalsTopologicalNodeMinus1(modelTP,lineTN.get(side),cimns,lineTerminals.get(side));
         //add the term1 of the breaker so that it is connected to the CN that is created
         Property termToTN = ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode");
-        termList.add(ResourceFactory.createStatement(resBreaker1Term1,termToTN,lineTN.get(side).getObject()));
-        //remove the old connection to the TN
-        //modTPModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(),termToTN,lineTN.get(side).getObject()));
-        //add the term 1 to the TN
-        modTPModel.add(ResourceFactory.createStatement(resBreaker1Term1,termToTN,lineTN.get(side).getObject()));
+        if (side1TNboundaryDoBreaker) {
+            termList.add(ResourceFactory.createStatement(resBreaker1Term1, termToTN, lineTN.get(side).getObject()));
+            //remove the old connection to the TN
+            //modTPModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(),termToTN,lineTN.get(side).getObject()));
+            //add the term 1 to the TN
+            modTPModel.add(ResourceFactory.createStatement(resBreaker1Term1, RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
+            modTPModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToTN, lineTN.get(side).getObject()));
 
-        if (modTPModel.listStatements(null, cnToTn, lineTN.getFirst().getObject()).hasNext()) {//there is a connectivity node at side 1
-            Statement stmtCN = modTPModel.listStatements(null, cnToTn, lineTN.getFirst().getObject()).nextStatement();
-            cn1res = stmtCN.getSubject();
-            //need to remove Terminal.ConnectivityNode
-            if (modEQModel.listStatements(lineTerminals.get(side).getSubject(),termToCn,ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
-                modEQModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
+            if (modTPModel.listStatements(null, cnToTn, lineTN.getFirst().getObject()).hasNext()) {//there is a connectivity node at side 1
+                Statement stmtCN = modTPModel.listStatements(null, cnToTn, lineTN.getFirst().getObject()).nextStatement();
+                cn1res = stmtCN.getSubject();
+                //need to remove Terminal.ConnectivityNode
+                if (modEQModel.listStatements(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
+                    modEQModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
+                }
+                modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
+            } else {//there is no CN at side 1, add CN
+
+
+                List<Resource> terminalsCN = new LinkedList<>();
+                for (Statement t : termList) {
+                    //terminalsCN.add(t.getSubject());
+                    //get cond equipment
+                    Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
+                    String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
+                    if (!resType.equals("ACLineSegment")) {
+                        terminalsCN.add(t.getSubject());
+                    }
+                }
+                terminalsCN.add(resBreaker1Term1);
+                Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
+                modEQModel = (Model) cn1Side1Map.get("modelEQ");
+                modTPModel = (Model) cn1Side1Map.get("modelTP");
+                modSVModel = (Model) cn1Side1Map.get("modelSV");
+                cn1res = (Resource) cn1Side1Map.get("resource");
+                modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
+
             }
-            modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
-        }else{//there is no CN at side 1, add CN
 
+            modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+            modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
 
-            List<Resource> terminalsCN = new LinkedList<>();
-            for (Statement t : termList ){
-                //terminalsCN.add(t.getSubject());
-                //get cond equipment
-                Resource condEq = modEQModel.getRequiredProperty(t.getSubject(),termToConEQ).getObject().asResource();
-                String resType = modEQModel.getRequiredProperty(condEq,RDF.type).getObject().asResource().getLocalName();
-                if (!resType.equals("ACLineSegment")) {
-                    terminalsCN.add(t.getSubject());
+            //check if one of the terminals if also a terminal referenced by a TieFlow and change the reference to be the terminal of the breaker 1
+
+            for (Statement tie : tieFlowList) {
+                if (modEQModel.getRequiredProperty(tie.getSubject(), tieToTerminal).getObject().asResource().equals(lineTerminals.get(side).getSubject())) {
+                    modEQModel.remove(ResourceFactory.createStatement(tie.getSubject(), tieToTerminal, lineTerminals.get(side).getSubject()));
+                    modEQModel.add(ResourceFactory.createStatement(tie.getSubject(), tieToTerminal, resBreaker1Term1));
                 }
             }
-            terminalsCN.add(resBreaker1Term1);
-            Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD,impMap,mapIDs,side,innerSide);
-            modEQModel = (Model) cn1Side1Map.get("modelEQ");
-            modTPModel = (Model) cn1Side1Map.get("modelTP");
-            modSVModel = (Model) cn1Side1Map.get("modelSV");
-            cn1res = (Resource) cn1Side1Map.get("resource");
-            modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
-
         }
 
-        modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
-        modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
-
         side = 1;
-        Resource cn2res;
+        Resource cn2res = ResourceFactory.createResource("http://res.eu#NA");
 
         termList = GetTerminalsTopologicalNodeMinus1(modelTP,lineTN.get(side),cimns,lineTerminals.get(side));
         //add the term1 of the breaker so that it is connected to the CN that is created
-        termList.add(ResourceFactory.createStatement(resBreaker2Term1,termToTN,lineTN.get(side).getObject()));
-        //remove the old connection to the TN
-        //modTPModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(),termToTN,lineTN.get(side).getObject()));
-        //add the term 1 to the TN
-        modTPModel.add(ResourceFactory.createStatement(resBreaker2Term1,termToTN,lineTN.get(side).getObject()));
+        if (side2TNboundaryDoBreaker) {
+            termList.add(ResourceFactory.createStatement(resBreaker2Term1, termToTN, lineTN.get(side).getObject()));
+            //remove the old connection to the TN
+            //modTPModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(),termToTN,lineTN.get(side).getObject()));
+            //add the term 1 to the TN
+            modTPModel.add(ResourceFactory.createStatement(resBreaker2Term1, RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
+            modTPModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToTN, lineTN.get(side).getObject()));
 
-        if (modTPModel.listStatements(null, cnToTn, lineTN.get(side).getObject()).hasNext()) {//there is a connectivity node at side 2
-            Statement stmtCN = modTPModel.listStatements(null, cnToTn, lineTN.get(side).getObject()).nextStatement();
-            cn2res = stmtCN.getSubject();
-            //need to remove Terminal.ConnectivityNode
-            if (modEQModel.listStatements(lineTerminals.get(side).getSubject(),termToCn,ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
-                modEQModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
+            if (modTPModel.listStatements(null, cnToTn, lineTN.get(side).getObject()).hasNext()) {//there is a connectivity node at side 2
+                Statement stmtCN = modTPModel.listStatements(null, cnToTn, lineTN.get(side).getObject()).nextStatement();
+                cn2res = stmtCN.getSubject();
+                //need to remove Terminal.ConnectivityNode
+                if (modEQModel.listStatements(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
+                    modEQModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
+                }
+                modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
+            } else {//there is no CN at side 2, add CN
+
+
+                List<Resource> terminalsCN = new LinkedList<>();
+                for (Statement t : termList) {
+                    //get cond equipment
+                    Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
+                    String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
+                    if (!resType.equals("ACLineSegment")) {
+                        terminalsCN.add(t.getSubject());
+                    }
+                }
+                terminalsCN.add(resBreaker2Term1);
+                Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
+                modEQModel = (Model) cn1Side1Map.get("modelEQ");
+                modTPModel = (Model) cn1Side1Map.get("modelTP");
+                modSVModel = (Model) cn1Side1Map.get("modelSV");
+                cn2res = (Resource) cn1Side1Map.get("resource");
+                modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
             }
-            modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
-        }else{//there is no CN at side 2, add CN
 
+            modTPModel.add(ResourceFactory.createStatement(cn2res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+            modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
 
-            List<Resource> terminalsCN = new LinkedList<>();
-            for (Statement t : termList ){
-                //get cond equipment
-                Resource condEq = modEQModel.getRequiredProperty(t.getSubject(),termToConEQ).getObject().asResource();
-                String resType = modEQModel.getRequiredProperty(condEq,RDF.type).getObject().asResource().getLocalName();
-                if (!resType.equals("ACLineSegment")) {
-                    terminalsCN.add(t.getSubject());
+            //check if one of the terminals if also a terminal referenced by a TieFlow and change the reference to be the terminal of the breaker 1
+            for (Statement tie : tieFlowList) {
+                if (modEQModel.getRequiredProperty(tie.getSubject(), tieToTerminal).getObject().asResource().equals(lineTerminals.get(side).getSubject())) {
+                    modEQModel.remove(ResourceFactory.createStatement(tie.getSubject(), tieToTerminal, lineTerminals.get(side).getSubject()));
+                    modEQModel.add(ResourceFactory.createStatement(tie.getSubject(), tieToTerminal, resBreaker2Term1));
                 }
             }
-            terminalsCN.add(resBreaker2Term1);
-            Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD,impMap,mapIDs,side,innerSide);
-            modEQModel = (Model) cn1Side1Map.get("modelEQ");
-            modTPModel = (Model) cn1Side1Map.get("modelTP");
-            modSVModel = (Model) cn1Side1Map.get("modelSV");
-            cn2res = (Resource) cn1Side1Map.get("resource");
-            modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
         }
-
-        modTPModel.add(ResourceFactory.createStatement(cn2res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
-        modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
 
         if (expMap) {
             List Element_type = expMapToXls.get("Element_type");
@@ -3186,82 +3252,101 @@ public class ModelManipulationFactory {
         return mapIDs;
     }
 
-    public static Map<String,Object> LineInnerConnections(Model modEQModel, Model modTPModel, Model modSVModel, List<Statement> lineTN, String cimns, List<Statement> lineTerminals, Resource resBreakerTerm1, Resource resBreakerTerm2, String cgmesVersion, Statement island, Model modelTPBD,boolean breakerStatus,boolean impMap, Map<String,String> mapIDs) {
+    public static Map<String,Object> LineInnerConnections(Model modEQModel, Model modTPModel, Model modSVModel, List<Statement> lineTN, String cimns, List<Statement> lineTerminals, Resource resBreakerTerm1, Resource resBreakerTerm2, String cgmesVersion, Statement island, Model modelTPBD,boolean breaker1Status, boolean breaker2Status, boolean impMap, Map<String,String> mapIDs,boolean side1TNboundaryDoBreaker, boolean side2TNboundaryDoBreaker) {
 
         Property cnToTN = ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode");
         Property tnToBV = ResourceFactory.createProperty(cimns, "TopologicalNode.BaseVoltage");
         Property termToTN = ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode");
+        RDFNode termObj = ResourceFactory.createProperty(cimns, "Terminal"); //TODO check if needed
         //add 2 CNs
         int side = 0;
         boolean innerSide = true;
         List<Resource> terminalsCN = new LinkedList<>();
-        terminalsCN.add(lineTerminals.get(side).getSubject());
-        terminalsCN.add(resBreakerTerm1);
-        Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD,impMap,mapIDs,side,innerSide);
-        modEQModel = (Model) cn1Side1Map.get("modelEQ");
-        modTPModel = (Model) cn1Side1Map.get("modelTP");
-        modSVModel = (Model) cn1Side1Map.get("modelSV");
-        Resource cn1res = (Resource) cn1Side1Map.get("resource");
-        Resource tn1res = ResourceFactory.createResource(cimns+ "NA");
+        Resource cn1res = ResourceFactory.createResource("http://res.eu#NA");
+        Resource tn1res = ResourceFactory.createResource("http://res.eu#NA");
+        if (side1TNboundaryDoBreaker) {
+            terminalsCN.add(lineTerminals.get(side).getSubject());
+            terminalsCN.add(resBreakerTerm1);
+            Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
+            modEQModel = (Model) cn1Side1Map.get("modelEQ");
+            modTPModel = (Model) cn1Side1Map.get("modelTP");
+            modSVModel = (Model) cn1Side1Map.get("modelSV");
+            cn1res = (Resource) cn1Side1Map.get("resource");
+            tn1res = ResourceFactory.createResource(cimns + "NA");
 
-        if (!breakerStatus) { // breaker is open, add also TN
-            Map<String,Object> tnMap = AddTopologicalNode(modEQModel, modTPModel, modSVModel,cimns,island,cn1res,cgmesVersion,impMap,mapIDs,side,innerSide);
-            tn1res = (Resource) tnMap.get("resource");
-            modTPModel = (Model) tnMap.get("modelTP");
-            modSVModel = (Model) tnMap.get("modelSV");
-            modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTN, ResourceFactory.createProperty(tn1res.toString())));
-            //get base voltage of the topologicalnode and assign it to the new one
-            RDFNode tnBV = null;
-            if (modTPModel.listStatements(lineTN.get(side).getObject().asResource(),tnToBV, (RDFNode) null).hasNext()) {
-                tnBV = modTPModel.getRequiredProperty(lineTN.get(side).getObject().asResource(), tnToBV).getObject();
-            }else if (modelTPBD.listStatements(lineTN.get(side).getObject().asResource(),tnToBV, (RDFNode) null).hasNext()) {
-                tnBV = modelTPBD.getRequiredProperty(lineTN.get(side).getObject().asResource(), tnToBV).getObject();
+
+            if (!breaker1Status) { // breaker is open, add also TN
+                Map<String, Object> tnMap = AddTopologicalNode(modEQModel, modTPModel, modSVModel, cimns, island, cn1res, cgmesVersion, impMap, mapIDs, side, innerSide);
+                tn1res = (Resource) tnMap.get("resource");
+                modTPModel = (Model) tnMap.get("modelTP");
+                modSVModel = (Model) tnMap.get("modelSV");
+                modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTN, ResourceFactory.createProperty(tn1res.toString())));
+                //get base voltage of the topologicalnode and assign it to the new one
+                RDFNode tnBV = null;
+                if (modTPModel.listStatements(lineTN.get(side).getObject().asResource(), tnToBV, (RDFNode) null).hasNext()) {
+                    tnBV = modTPModel.getRequiredProperty(lineTN.get(side).getObject().asResource(), tnToBV).getObject();
+                } else if (modelTPBD.listStatements(lineTN.get(side).getObject().asResource(), tnToBV, (RDFNode) null).hasNext()) {
+                    tnBV = modelTPBD.getRequiredProperty(lineTN.get(side).getObject().asResource(), tnToBV).getObject();
+                }
+                if (tnBV != null) {
+                    modTPModel.add(ResourceFactory.createStatement(tn1res, tnToBV, tnBV));
+                }
+                modTPModel.add(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
+                modTPModel.add(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToTN, ResourceFactory.createProperty(tn1res.toString())));
+                modTPModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToTN, lineTN.get(side).getObject()));
+                modTPModel.add(ResourceFactory.createStatement(resBreakerTerm1, RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
+                modTPModel.add(ResourceFactory.createStatement(resBreakerTerm1, termToTN, ResourceFactory.createProperty(tn1res.toString())));
+            } else {
+                modTPModel.add(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
+                modTPModel.add(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToTN, lineTN.get(side).getObject()));
+                modTPModel.add(ResourceFactory.createStatement(resBreakerTerm1, RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
+                modTPModel.add(ResourceFactory.createStatement(resBreakerTerm1, termToTN, lineTN.get(side).getObject()));
             }
-            if (tnBV != null) {
-                modTPModel.add(ResourceFactory.createStatement(tn1res, tnToBV, tnBV));
-            }
-            modTPModel.add(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToTN, ResourceFactory.createProperty(tn1res.toString())));
-            modTPModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToTN, lineTN.get(side).getObject()));
-            modTPModel.add(ResourceFactory.createStatement(resBreakerTerm1, termToTN, ResourceFactory.createProperty(tn1res.toString())));
-        }else{
-            modTPModel.add(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToTN, lineTN.get(side).getObject()));
-            modTPModel.add(ResourceFactory.createStatement(resBreakerTerm1, termToTN, lineTN.get(side).getObject()));
         }
 
 
         side = 1;
         terminalsCN = new LinkedList<>();
-        terminalsCN.add(lineTerminals.get(side).getSubject());
-        terminalsCN.add(resBreakerTerm2);
-        Map<String,Object> cn2Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD,impMap,mapIDs,side,innerSide);
-        modEQModel = (Model) cn2Side1Map.get("modelEQ");
-        modTPModel = (Model) cn2Side1Map.get("modelTP");
-        modSVModel = (Model) cn2Side1Map.get("modelSV");
-        Resource cn2res = (Resource) cn2Side1Map.get("resource");
-        Resource tn2res = ResourceFactory.createResource(cimns+ "NA");
+        Resource cn2res = ResourceFactory.createResource("http://res.eu#NA");
+        Resource tn2res = ResourceFactory.createResource("http://res.eu#NA");
+        if (side2TNboundaryDoBreaker) {
+            terminalsCN.add(lineTerminals.get(side).getSubject());
+            terminalsCN.add(resBreakerTerm2);
+            Map<String, Object> cn2Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
+            modEQModel = (Model) cn2Side1Map.get("modelEQ");
+            modTPModel = (Model) cn2Side1Map.get("modelTP");
+            modSVModel = (Model) cn2Side1Map.get("modelSV");
+            cn2res = (Resource) cn2Side1Map.get("resource");
+            tn2res = ResourceFactory.createResource(cimns + "NA");
 
-        if (!breakerStatus) { // breaker is open, add also TN
-            Map<String,Object> tnMap = AddTopologicalNode(modEQModel, modTPModel, modSVModel,cimns,island,cn2res,cgmesVersion,impMap,mapIDs,side,innerSide);
-            tn2res = (Resource) tnMap.get("resource");
-            modTPModel = (Model) tnMap.get("modelTP");
-            modSVModel = (Model) tnMap.get("modelSV");
-            modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTN, ResourceFactory.createProperty(tn2res.toString())));
-            //get base voltage of the topologicalnode and assign it to the new one
-            RDFNode tnBV = null;
-            if (modTPModel.listStatements(lineTN.get(side).getObject().asResource(),tnToBV, (RDFNode) null).hasNext()) {
-                tnBV = modTPModel.getRequiredProperty(lineTN.get(side).getObject().asResource(), tnToBV).getObject();
-            }else if (modelTPBD.listStatements(lineTN.get(side).getObject().asResource(),tnToBV, (RDFNode) null).hasNext()) {
-                tnBV = modelTPBD.getRequiredProperty(lineTN.get(side).getObject().asResource(), tnToBV).getObject();
+
+            if (!breaker2Status) { // breaker is open, add also TN
+                Map<String, Object> tnMap = AddTopologicalNode(modEQModel, modTPModel, modSVModel, cimns, island, cn2res, cgmesVersion, impMap, mapIDs, side, innerSide);
+                tn2res = (Resource) tnMap.get("resource");
+                modTPModel = (Model) tnMap.get("modelTP");
+                modSVModel = (Model) tnMap.get("modelSV");
+                modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTN, ResourceFactory.createProperty(tn2res.toString())));
+                //get base voltage of the topologicalnode and assign it to the new one
+                RDFNode tnBV = null;
+                if (modTPModel.listStatements(lineTN.get(side).getObject().asResource(), tnToBV, (RDFNode) null).hasNext()) {
+                    tnBV = modTPModel.getRequiredProperty(lineTN.get(side).getObject().asResource(), tnToBV).getObject();
+                } else if (modelTPBD.listStatements(lineTN.get(side).getObject().asResource(), tnToBV, (RDFNode) null).hasNext()) {
+                    tnBV = modelTPBD.getRequiredProperty(lineTN.get(side).getObject().asResource(), tnToBV).getObject();
+                }
+                if (tnBV != null) {
+                    modTPModel.add(ResourceFactory.createStatement(tn2res, tnToBV, tnBV));
+                }
+                modTPModel.add(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
+                modTPModel.add(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToTN, ResourceFactory.createProperty(tn2res.toString())));
+                modTPModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToTN, lineTN.get(side).getObject()));
+                modTPModel.add(ResourceFactory.createStatement(resBreakerTerm2, RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
+                modTPModel.add(ResourceFactory.createStatement(resBreakerTerm2, termToTN, ResourceFactory.createProperty(tn2res.toString())));
+            } else {
+                modTPModel.add(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
+                modTPModel.add(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToTN, lineTN.get(side).getObject()));
+                modTPModel.add(ResourceFactory.createStatement(resBreakerTerm2, RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
+                modTPModel.add(ResourceFactory.createStatement(resBreakerTerm2, termToTN, lineTN.get(side).getObject()));
             }
-            if (tnBV != null) {
-                modTPModel.add(ResourceFactory.createStatement(tn2res, tnToBV, tnBV));
-            }
-            modTPModel.add(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToTN, ResourceFactory.createProperty(tn2res.toString())));
-            modTPModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToTN, lineTN.get(side).getObject()));
-            modTPModel.add(ResourceFactory.createStatement(resBreakerTerm2, termToTN, ResourceFactory.createProperty(tn2res.toString())));
-        }else{
-            modTPModel.add(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToTN, lineTN.get(side).getObject()));
-            modTPModel.add(ResourceFactory.createStatement(resBreakerTerm2, termToTN, lineTN.get(side).getObject()));
         }
 
         Map<String,Object> breakerConMap = new HashMap<>();
@@ -3293,6 +3378,7 @@ public class ModelManipulationFactory {
         modSVModel = (Model) cn1Side1Map.get("modelSV");
         Resource cn1res = (Resource) cn1Side1Map.get("resource");
         Resource tn1res = ResourceFactory.createResource(cimns+ "NA");
+        RDFNode termObj = ResourceFactory.createProperty(cimns,"Terminal"); //TODO check if needed
 
         if (!breakerStatus) { // breaker is open, add also TN
             Map<String,Object> tnMap = AddTopologicalNode(modEQModel, modTPModel, modSVModel,cimns,island,cn1res,cgmesVersion,impMap,mapIDs,side,innerSide);
@@ -3310,11 +3396,15 @@ public class ModelManipulationFactory {
             if (tnBV != null) {
                 modTPModel.add(ResourceFactory.createStatement(tn1res, tnToBV, tnBV));
             }
+            modTPModel.add(ResourceFactory.createStatement(smTerminals.get(side).getSubject(), RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
             modTPModel.add(ResourceFactory.createStatement(smTerminals.get(side).getSubject(), termToTN, ResourceFactory.createProperty(tn1res.toString())));
             modTPModel.remove(ResourceFactory.createStatement(smTerminals.get(side).getSubject(), termToTN, smTN.get(side).getObject()));
+            modTPModel.add(ResourceFactory.createStatement(resBreakerTerm2, RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
             modTPModel.add(ResourceFactory.createStatement(resBreakerTerm2, termToTN, ResourceFactory.createProperty(tn1res.toString())));
         }else{
+            modTPModel.add(ResourceFactory.createStatement(smTerminals.get(side).getSubject(), RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
             modTPModel.add(ResourceFactory.createStatement(smTerminals.get(side).getSubject(), termToTN, smTN.get(side).getObject()));
+            modTPModel.add(ResourceFactory.createStatement(resBreakerTerm2, RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
             modTPModel.add(ResourceFactory.createStatement(resBreakerTerm2, termToTN, smTN.get(side).getObject()));
         }
 
