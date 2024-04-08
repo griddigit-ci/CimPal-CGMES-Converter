@@ -627,7 +627,7 @@ public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
         } else if (propName.equalsIgnoreCase( "showDoctypeDeclaration" )) {
             return setShowDoctypeDeclaration( propValue );
         } else if (propName.equalsIgnoreCase( "minimalPrefixes" )) {
-            try { return new Boolean( !writingAllModelPrefixNamespaces ); }
+            try { return Boolean.valueOf( !writingAllModelPrefixNamespaces ); }
             finally { writingAllModelPrefixNamespaces = !getBoolean( propValue ); }
         } else if (propName.equalsIgnoreCase("xmlbase")) {
             String result = xmlBase;
@@ -638,13 +638,13 @@ public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
         } else if (propName.equalsIgnoreCase("width")) {
             return setWidth(propValue);
         } else if (propName.equalsIgnoreCase("longid")) {
-            Boolean result = new Boolean(longId);
+            Boolean result = longId;
             longId = getBoolean(propValue);
             return result;
         } else if (propName.equalsIgnoreCase("attributeQuoteChar")) {
             return setAttributeQuoteChar(propValue);
         } else if (propName.equalsIgnoreCase( "allowBadURIs" )) {
-            Boolean result = new Boolean( !demandGoodURIs );
+            Boolean result = Boolean.valueOf( !demandGoodURIs );
             demandGoodURIs = !getBoolean(propValue);
             return result;
         } else if (propName.equalsIgnoreCase("prettyTypes")) {
@@ -697,7 +697,7 @@ public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
     }
 
     private Integer setWidth(Object propValue) {
-        Integer oldValue = new Integer(width);
+        Integer oldValue = Integer.valueOf(width);
         if (propValue instanceof Integer) {
             width = ((Integer) propValue).intValue();
         } else {
@@ -711,7 +711,7 @@ public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
     }
 
     private Integer setTab(Object propValue) {
-        Integer result = new Integer(tabSize);
+        Integer result = Integer.valueOf(tabSize);
         if (propValue instanceof Integer) {
             tabSize = ((Integer) propValue).intValue();
         } else {
@@ -864,7 +864,7 @@ public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
             IRI iri = factory.create( uri );
 
             if (iri.hasViolation(false) )
-                throw new BadURIException( "Only well-formed absolute URIrefs can be included in RDF/XML output: "
+                throw new RuntimeException( "Only well-formed absolute URIrefs can be included in RDF/XML output: "
                         + (iri.violations(false).next()).getShortMessage());
         }
 

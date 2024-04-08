@@ -15,6 +15,7 @@ import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.riot.system.StreamRDF;
 import org.apache.jena.sparql.core.Quad;
 import org.apache.jena.sparql.graph.GraphFactory;
+import org.apache.jena.graph.NodeFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -65,7 +66,10 @@ public class DataTypeStreamRDF implements StreamRDF {
             String literalValue = triple.getObject().getLiteralLexicalForm();
             Literal typedLiteral = ResourceFactory.createTypedLiteral(literalValue, datatype);
             /* generate new triple */
-            triple = new Triple(triple.getSubject(), triple.getPredicate(), typedLiteral.asNode());
+            // Create new object node
+            Node objectNode = NodeFactory.createLiteral(typedLiteral.getLexicalForm(), typedLiteral.getDatatype());
+            // Generate new triple
+            triple = Triple.create(triple.getSubject(), triple.getPredicate(), objectNode);
         }
         return triple;
     }
