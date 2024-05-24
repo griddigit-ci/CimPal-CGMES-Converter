@@ -2328,7 +2328,6 @@ public class ModelManipulationFactory {
         saveProperties.put("showXmlBaseDeclaration", "false");
         Set<Resource> rdfAboutList = LoadRDFAbout(xmlBase, cgmesVersion);
         Set<Resource> rdfEnumList = LoadRDFEnum(xmlBase, cgmesVersion);
-
         saveProperties.put("rdfAboutList", rdfAboutList);
         saveProperties.put("rdfEnumList", rdfEnumList);
         saveProperties.put("putHeaderOnTop", true);
