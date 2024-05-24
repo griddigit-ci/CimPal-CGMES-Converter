@@ -1941,13 +1941,26 @@ public class ModelManipulationFactory {
             saveProperties.replace("fileFolder", file);
         }
 
-        HashMap<String, Set<Resource>> rdfAboutMap = LoadRDFAbout("CGMESv2.4");
-        HashMap<String, Set<Resource>> rdfEnumMap = LoadRDFEnum("CGMESv2.4");
+//        HashMap<String, Set<Resource>> rdfAboutMap = LoadRDFAbout("CGMESv2.4");
+//        HashMap<String, Set<Resource>> rdfEnumMap = LoadRDFEnum("CGMESv2.4");
 
         for (Map.Entry<String, Model> entry : instanceDataModelMap.entrySet()) {
 
-            Set<Resource> rdfAboutList = rdfAboutMap.get(entry.getKey());
-            Set<Resource> rdfEnumList = rdfEnumMap.get(entry.getKey());
+            //TODO fix this to be more universal
+            String profileURI = switch (entry.getKey()) {
+                case "EQ" -> "http://entsoe.eu/CIM/EquipmentCore/3/1#";
+                case "SSH" -> "http://entsoe.eu/CIM/SteadyStateHypothesis/1/1#";
+                case "TP" -> "http://entsoe.eu/CIM/Topology/4/1#";
+                case "SV" -> "http://entsoe.eu/CIM/StateVariables/4/1#";
+                default -> null;
+            };
+
+
+            Set<Resource> rdfAboutList = LoadRDFAbout(profileURI, "CGMESv2.4");
+            Set<Resource> rdfEnumList = LoadRDFEnum(profileURI, "CGMESv2.4");
+
+//            Set<Resource> rdfAboutList = rdfAboutMap.get(entry.getKey());
+//            Set<Resource> rdfEnumList = rdfEnumMap.get(entry.getKey());
             rdfAboutList.add(ResourceFactory.createResource(saveProperties.get("headerClassResource").toString()));
 
             //this is related to the save of the data
@@ -2122,6 +2135,63 @@ public class ModelManipulationFactory {
         return modelFiles;
     }
 
+
+    public static Set<Resource> LoadRDFAbout(String profileURI, String cgmesVersion) throws FileNotFoundException {
+        Set<Resource> rdfAboutList = new HashSet<>();
+        Model model = ModelFactory.createDefaultModel();
+        InputStream inputStream = null;
+        if (cgmesVersion.equals("CGMESv3.0")){
+            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/Serialization_cgmes_v300_enum_id_about.ttl");
+        } else if (cgmesVersion.equals("CGMESv2.4")) {
+            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/Serialization_cgmes_v2415_enum_id_about.ttl");
+        }
+        if (inputStream != null) {
+            RDFDataMgr.read(model, inputStream,"", Lang.TURTLE);
+        }
+        else {
+            throw new FileNotFoundException("File not found for serialization.");
+        }
+        for (StmtIterator it = model.listStatements(null,RDF.type, RDFS.Class); it.hasNext(); ) {
+            Statement stmt = it.next();
+            if (stmt.getSubject().equals(ResourceFactory.createResource(profileURI+"RdfAbout"))){
+                for (NodeIterator iter = model.listObjectsOfProperty(stmt.getSubject(), OWL2.members); iter.hasNext(); ) {
+                    RDFNode o_i = iter.next();
+                    rdfAboutList.add(o_i.asResource());
+
+                }
+            }
+        }
+        return rdfAboutList;
+    }
+    public static Set<Resource> LoadRDFEnum(String profileURI, String cgmesVersion) throws FileNotFoundException {
+        Set<Resource> RdfEnumList = new HashSet<>();
+        Model model = ModelFactory.createDefaultModel();
+        InputStream inputStream = null;
+        if (cgmesVersion.equals("CGMESv3.0")){
+            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/Serialization_cgmes_v300_enum_id_about.ttl");
+        } else if (cgmesVersion.equals("CGMESv2.4")) {
+            inputStream = InstanceDataFactory.class.getResourceAsStream("/serialization/Serialization_cgmes_v2415_enum_id_about.ttl");
+        }
+        if (inputStream != null) {
+            RDFDataMgr.read(model, inputStream, "", Lang.TURTLE);
+        }
+        else {
+            throw new FileNotFoundException("File not found for serialization.");
+        }
+
+        for (StmtIterator it = model.listStatements(null,RDF.type, RDFS.Class); it.hasNext(); ) {
+            Statement stmt = it.next();
+            if (stmt.getSubject().equals(ResourceFactory.createResource(profileURI+"RdfEnum"))){
+                for (NodeIterator iter = model.listObjectsOfProperty(stmt.getSubject(), OWL2.members); iter.hasNext(); ) {
+                    RDFNode o_i = iter.next();
+                    RdfEnumList.add(o_i.asResource());
+                }
+            }
+        }
+        return RdfEnumList;
+    }
+
+
     //Modify IGM
     public static void ModifyIGM(Map<String, Map> loadDataMap,String cgmesVersion,boolean impMap,boolean applyAllCondEq,boolean applyLine,boolean applyTrafo,boolean applySynMach,boolean expMap, boolean applyEQmap) throws IOException {
         String xmlBase ="";
@@ -2256,8 +2326,11 @@ public class ModelManipulationFactory {
         saveProperties.put("dozip", false);
         saveProperties.put("instanceData", "true"); //this is to only print the ID and not with namespace
         saveProperties.put("showXmlBaseDeclaration", "false");
-//        saveProperties.put("rdfAboutList", rdfAboutList);
-//        saveProperties.put("rdfEnumList", rdfEnumList);
+        Set<Resource> rdfAboutList = LoadRDFAbout(xmlBase, cgmesVersion);
+        Set<Resource> rdfEnumList = LoadRDFEnum(xmlBase, cgmesVersion);
+
+        saveProperties.put("rdfAboutList", rdfAboutList);
+        saveProperties.put("rdfEnumList", rdfEnumList);
         saveProperties.put("putHeaderOnTop", true);
         saveProperties.put("headerClassResource", "http://iec.ch/TC57/61970-552/ModelDescription/1#FullModel");
         saveProperties.put("extensionName", "RDF XML");
