@@ -8,7 +8,6 @@ package common.customWriter;
 
 import common.customWriter.jena.CustomRelation;
 import org.apache.jena.JenaRuntime;
-//import org.apache.jena.ext.xerces.util.XMLChar;
 import org.apache.jena.iri.IRI;
 import org.apache.jena.iri.IRIFactory;
 import org.apache.jena.rdf.model.*;
@@ -618,7 +617,7 @@ public abstract class CustomBaseXMLWriter implements RDFXMLWriterI  {
      Set the writer property propName to the value obtained from propValue. Return an
      Object representation of the original value.
 
-     @see org.apache.jena.rdf.model.RDFWriterI#setProperty(java.lang.String, java.lang.Object)
+     @see RDFWriterI#setProperty(String, Object)
      */
     @Override
     final synchronized public Object setProperty( String propName, Object propValue ) {
