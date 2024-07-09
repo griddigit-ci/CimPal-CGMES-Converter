@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>eu.griddigit</groupId>
   <artifactId>CimPalCGMESConverter</artifactId>
-  <version>${cimpal.version}</version>
+  <version>2024.2.0.0</version>
   <build>
     <finalName>CimPalCGMESConverter</finalName>
     <plugins>
@@ -63,6 +63,7 @@
       <plugin>
         <groupId>com.akathist.maven.plugins.launch4j</groupId>
         <artifactId>launch4j-maven-plugin</artifactId>
+        <version>2.5.0</version>
         <executions>
           <execution>
             <id>l4j-clui</id>
