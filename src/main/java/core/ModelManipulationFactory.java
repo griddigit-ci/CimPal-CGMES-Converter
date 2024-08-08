@@ -2439,6 +2439,14 @@ public class ModelManipulationFactory {
             }
         }
 
+        //Delete the custom extension
+        List<Statement> stmpToDelete = new LinkedList<>();
+        for (StmtIterator s = modEQModel.listStatements(null,ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")); s.hasNext();) {
+            Statement stmt = s.next();
+            stmpToDelete.add(stmt);
+        }
+        modEQModel.remove(stmpToDelete);
+
         //modTPModel.listStatements(ResourceFactory.createProperty("http://res.eu#NA"),RDF.type,ResourceFactory.createProperty("http://iec.ch/TC57/2013/CIM-schema-cim16#ConnectivityNode")).toList()
         //add the model to the map
         modifiedModelMap.put("EQ", modEQModel);
@@ -2610,7 +2618,7 @@ public class ModelManipulationFactory {
         if (impMap){
             mapIDs = GetMapIDs(SMstatement);
         }
-        // add breakers
+        // add breaker
         List<Statement> smTerminals = GetElementTerminals(modelEQ,SMstatement,cimns);
         List<Statement> smCN = GetElementConnectivityNodes(modelEQ, smTerminals, cimns);
         List<Statement> smTN= GetElementTopologicalNodes(modelTP, smTerminals, smCN, cimns);
@@ -2668,7 +2676,7 @@ public class ModelManipulationFactory {
         //check Connectivity nodes and Topological nodes at the two ends and connect
         int side = 0;
         boolean innerSide = false;
-        Resource cn1res;
+        Resource cn1res = ResourceFactory.createResource("http://res.eu#NAsm");
         Property termToCn = ResourceFactory.createProperty(cimns, "Terminal.ConnectivityNode");
         Property termToConEQ = ResourceFactory.createProperty(cimns, "Terminal.ConductingEquipment");
 
@@ -2682,14 +2690,26 @@ public class ModelManipulationFactory {
         modTPModel.add(ResourceFactory.createStatement(resBreakerTerm1, RDF.type, termObj)); //TODO check this if needed added 27 Mar 2024
         modTPModel.add(ResourceFactory.createStatement(resBreakerTerm1,termToTN,smTN.get(side).getObject()));
 
+//        if (smTerminals.get(side).getSubject().getLocalName().equals("_d4815b07-ce3e-cf4f-6201-4f60fd420c2d")){
+//            boolean test = true;
+//        }
+
         if (modTPModel.listStatements(null, cnToTn, smTN.getFirst().getObject()).hasNext()) {//there is a connectivity node at side 1
-            Statement stmtCN = modTPModel.listStatements(null, cnToTn, smTN.getFirst().getObject()).nextStatement();
-            cn1res = stmtCN.getSubject();
-            //need to remove Terminal.ConnectivityNode
-            if (modEQModel.listStatements(smTerminals.get(side).getSubject(),termToCn,ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
-                modEQModel.remove(ResourceFactory.createStatement(smTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
+
+            for (StmtIterator s = modTPModel.listStatements(null, cnToTn, smTN.getFirst().getObject()); s.hasNext();) {
+                Statement stmtCN = s.next();
+               // Statement stmtCN = modTPModel.listStatements(null, cnToTn, smTN.getFirst().getObject()).nextStatement();
+
+                if (modEQModel.listStatements(stmtCN.getSubject(), ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")).hasNext()) {
+                    cn1res = stmtCN.getSubject();
+                    //need to remove Terminal.ConnectivityNode
+                    if (modEQModel.listStatements(smTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
+                        modEQModel.remove(ResourceFactory.createStatement(smTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
+                    }
+                    modEQModel.add(ResourceFactory.createStatement(resBreakerTerm1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
+                }
             }
-            modEQModel.add(ResourceFactory.createStatement(resBreakerTerm1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
+
         }else{//there is no CN at side 1, add CN
 
 
@@ -2710,11 +2730,13 @@ public class ModelManipulationFactory {
             modSVModel = (Model) cn1Side1Map.get("modelSV");
             cn1res = (Resource) cn1Side1Map.get("resource");
             modEQModel.add(ResourceFactory.createStatement(resBreakerTerm1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
+            modEQModel.add(ResourceFactory.createStatement(cn1res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
 
+            modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+            modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(smTN.get(side).getObject().toString())));
         }
 
-        modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
-        modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(smTN.get(side).getObject().toString())));
+
 
 
         if (expMap) {
@@ -2844,9 +2866,9 @@ public class ModelManipulationFactory {
         //create breakers
         //create breaker 1
         int breakerNumber = 1;
-        Resource resBreaker1Term1 = ResourceFactory.createResource("http://res.eu#NA");
-        Resource resBreaker1Term2 = ResourceFactory.createResource("http://res.eu#NA");
-        Resource resBreaker1 = ResourceFactory.createResource("http://res.eu#NA");
+        Resource resBreaker1Term1 = ResourceFactory.createResource("http://res.eu#NAb1t1");
+        Resource resBreaker1Term2 = ResourceFactory.createResource("http://res.eu#NAb1t2");
+        Resource resBreaker1 = ResourceFactory.createResource("http://res.eu#NAbreaker1");
         if (side1TNboundaryDoBreaker) {
             Map<String, Object> breaker1Map = AddBreaker(modEQModel, modSSHModel, modSVModel, cimns, breaker1Status, cgmesVersion, impMap, mapIDs, breakerNumber);
             resBreaker1Term1 = (Resource) breaker1Map.get("resourceTerm1");
@@ -2859,9 +2881,9 @@ public class ModelManipulationFactory {
         //create breaker 2
         breakerNumber = 2;
         boolean breaker2Status = breakerStatusLogic(modelSSH, lineTerminals.get(1), cimns);
-        Resource resBreaker2Term1 = ResourceFactory.createResource("http://res.eu#NA");
-        Resource resBreaker2Term2 = ResourceFactory.createResource("http://res.eu#NA");
-        Resource resBreaker2 = ResourceFactory.createResource("http://res.eu#NA");
+        Resource resBreaker2Term1 = ResourceFactory.createResource("http://res.eu#NAb2t1");
+        Resource resBreaker2Term2 = ResourceFactory.createResource("http://res.eu#NAb2t2");
+        Resource resBreaker2 = ResourceFactory.createResource("http://res.eu#NAbreaker2");
         if (side2TNboundaryDoBreaker) {
             Map<String, Object> breaker2Map = AddBreaker(modEQModel, modSSHModel, modSVModel, cimns, breaker2Status, cgmesVersion, impMap, mapIDs, breakerNumber);
             resBreaker2Term1 = (Resource) breaker2Map.get("resourceTerm1");
@@ -2925,7 +2947,7 @@ public class ModelManipulationFactory {
         //check Connectivity nodes and Topological nodes at the two ends and connect
         int side = 0;
         boolean innerSide = false;
-        Resource cn1res = ResourceFactory.createResource("http://res.eu#NA");
+        Resource cn1res = ResourceFactory.createResource("http://res.eu#NAl1");
         Property termToCn = ResourceFactory.createProperty(cimns, "Terminal.ConnectivityNode");
         Property termToConEQ = ResourceFactory.createProperty(cimns, "Terminal.ConductingEquipment");
 
@@ -2941,13 +2963,32 @@ public class ModelManipulationFactory {
             modTPModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToTN, lineTN.get(side).getObject()));
 
             if (modTPModel.listStatements(null, cnToTn, lineTN.getFirst().getObject()).hasNext()) {//there is a connectivity node at side 1
-                Statement stmtCN = modTPModel.listStatements(null, cnToTn, lineTN.getFirst().getObject()).nextStatement();
-                cn1res = stmtCN.getSubject();
-                //need to remove Terminal.ConnectivityNode
-                if (modEQModel.listStatements(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
-                    modEQModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
+
+                for (StmtIterator s = modTPModel.listStatements(null, cnToTn, lineTN.getFirst().getObject()); s.hasNext();) {
+                    Statement stmtCN = s.next();
+                    // Statement stmtCN = modTPModel.listStatements(null, cnToTn, smTN.getFirst().getObject()).nextStatement();
+
+                    if (modEQModel.listStatements(stmtCN.getSubject(), ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")).hasNext()) {
+                        cn1res = stmtCN.getSubject();
+                        //need to remove Terminal.ConnectivityNode
+                        if (modEQModel.listStatements(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
+                            modEQModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
+                        }
+                        modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
+
+                        modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+                        modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
+                    }
                 }
-                modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
+
+
+//                Statement stmtCN = modTPModel.listStatements(null, cnToTn, lineTN.getFirst().getObject()).nextStatement();
+//                cn1res = stmtCN.getSubject();
+//                //need to remove Terminal.ConnectivityNode
+//                if (modEQModel.listStatements(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
+//                    modEQModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
+//                }
+//                modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
             } else {//there is no CN at side 1, add CN
 
 
@@ -2968,11 +3009,13 @@ public class ModelManipulationFactory {
                 modSVModel = (Model) cn1Side1Map.get("modelSV");
                 cn1res = (Resource) cn1Side1Map.get("resource");
                 modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
+                modEQModel.add(ResourceFactory.createStatement(cn1res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
 
+                modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+                modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
             }
 
-            modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
-            modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
+
 
             //check if one of the terminals if also a terminal referenced by a TieFlow and change the reference to be the terminal of the breaker 1
 
@@ -2985,7 +3028,7 @@ public class ModelManipulationFactory {
         }
 
         side = 1;
-        Resource cn2res = ResourceFactory.createResource("http://res.eu#NA");
+        Resource cn2res = ResourceFactory.createResource("http://res.eu#NAl2");
 
         termList = GetTerminalsTopologicalNodeMinus1(modelTP,lineTN.get(side),cimns,lineTerminals.get(side));
         //add the term1 of the breaker so that it is connected to the CN that is created
@@ -2998,13 +3041,34 @@ public class ModelManipulationFactory {
             modTPModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToTN, lineTN.get(side).getObject()));
 
             if (modTPModel.listStatements(null, cnToTn, lineTN.get(side).getObject()).hasNext()) {//there is a connectivity node at side 2
-                Statement stmtCN = modTPModel.listStatements(null, cnToTn, lineTN.get(side).getObject()).nextStatement();
-                cn2res = stmtCN.getSubject();
-                //need to remove Terminal.ConnectivityNode
-                if (modEQModel.listStatements(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
-                    modEQModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
+
+
+                for (StmtIterator s = modTPModel.listStatements(null, cnToTn, lineTN.get(side).getObject()); s.hasNext();) {
+                    Statement stmtCN = s.next();
+                    // Statement stmtCN = modTPModel.listStatements(null, cnToTn, smTN.getFirst().getObject()).nextStatement();
+
+                    if (modEQModel.listStatements(stmtCN.getSubject(), ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")).hasNext()) {
+                        cn2res = stmtCN.getSubject();
+                        //need to remove Terminal.ConnectivityNode
+                        if (modEQModel.listStatements(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn2res.toString())).hasNext()) {
+                            modEQModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn2res.toString())));
+                        }
+                        modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
+
+                        modTPModel.add(ResourceFactory.createStatement(cn2res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+                        modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
+                    }
                 }
-                modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
+
+
+
+//                Statement stmtCN = modTPModel.listStatements(null, cnToTn, lineTN.get(side).getObject()).nextStatement();
+//                cn2res = stmtCN.getSubject();
+//                //need to remove Terminal.ConnectivityNode
+//                if (modEQModel.listStatements(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
+//                    modEQModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
+//                }
+//                modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
             } else {//there is no CN at side 2, add CN
 
 
@@ -3024,10 +3088,13 @@ public class ModelManipulationFactory {
                 modSVModel = (Model) cn1Side1Map.get("modelSV");
                 cn2res = (Resource) cn1Side1Map.get("resource");
                 modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
+                modEQModel.add(ResourceFactory.createStatement(cn2res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
+
+                modTPModel.add(ResourceFactory.createStatement(cn2res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+                modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
             }
 
-            modTPModel.add(ResourceFactory.createStatement(cn2res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
-            modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
+
 
             //check if one of the terminals if also a terminal referenced by a TieFlow and change the reference to be the terminal of the breaker 1
             for (Statement tie : tieFlowList) {
