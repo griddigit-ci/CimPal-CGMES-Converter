@@ -314,7 +314,7 @@ public class CustomBasic extends CustomBaseXMLWriter {
                 if (r.getURI().contains("delete")) {
                     writer.print(
                             rdfAt("resource")
-                                    + "=#"
+                                    + "="
                                     + substitutedAttribute("#_"+r.getURI().split("_",2)[1]));
                 }else{
                 writer.print(
@@ -325,13 +325,21 @@ public class CustomBasic extends CustomBaseXMLWriter {
             }
         }
     }
-
+    private boolean isWellFormedXML(Literal literal) {
+        String lexicalForm = literal.getLexicalForm();
+        try {
+            javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new org.xml.sax.InputSource(new java.io.StringReader(lexicalForm)));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
     protected void writeLiteral( Literal l, PrintWriter writer ) {
         String lang = l.getLanguage();
         String form = l.getLexicalForm();
         if (Util.isLangString(l)) {
             writer.print(" xml:lang=" + attributeQuoted( lang ));
-        } else if (l.isWellFormedXML() && !blockLiterals) {
+        } else if (isWellFormedXML(l) && !blockLiterals) {
             // RDF XML Literals inline.
             writer.print(" " + rdfAt("parseType") + "=" + attributeQuoted( "Literal" )+">");
             writer.print( form );

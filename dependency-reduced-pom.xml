@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>eu.griddigit</groupId>
   <artifactId>CimPalCGMESConverter</artifactId>
-  <version>${cimpal.version}</version>
+  <version>2024.2.0.0</version>
   <build>
     <finalName>CimPalCGMESConverter</finalName>
     <plugins>
@@ -17,7 +17,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.5.1</version>
+        <version>3.6.0</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -52,11 +52,18 @@
               </excludes>
             </filter>
           </filters>
+          <relocations>
+            <relocation>
+              <pattern>org.apache.jena.shex</pattern>
+              <shadedPattern>your.custom.package.jena.shex</shadedPattern>
+            </relocation>
+          </relocations>
         </configuration>
       </plugin>
       <plugin>
         <groupId>com.akathist.maven.plugins.launch4j</groupId>
         <artifactId>launch4j-maven-plugin</artifactId>
+        <version>2.5.2</version>
         <executions>
           <execution>
             <id>l4j-clui</id>
@@ -110,17 +117,17 @@
     <dependency>
       <groupId>org.apache.jena</groupId>
       <artifactId>jena</artifactId>
-      <version>4.10.0</version>
+      <version>5.2.0</version>
       <type>pom</type>
       <scope>compile</scope>
     </dependency>
   </dependencies>
   <properties>
-    <jena.version>4.10.0</jena.version>
+    <jena.version>5.2.0</jena.version>
     <cimpal.version>2024.2.0.0</cimpal.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <log4j.version>2.12.1</log4j.version>
-    <javafx.version>21</javafx.version>
+    <log4j.version>2.24.1</log4j.version>
+    <javafx.version>21.0.1</javafx.version>
     <jdk.version>21</jdk.version>
   </properties>
 </project>
