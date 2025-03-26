@@ -217,7 +217,7 @@
                                  <tooltip>
                                     <Tooltip autoHide="true" maxWidth="-Infinity" prefWidth="300.0" text="Select if you want to apply to Lines (ACLineSegments). Note that Line with multiple secments is not yet supported." wrapText="true" />
                                  </tooltip></CheckBox>
-                                        <CheckBox fx:id="fCBrafo" disable="true" mnemonicParsing="false" onAction="#actionCBapplyPT" text="Apply to PowerTransformer" />
+                                        <CheckBox fx:id="fCBrafo" mnemonicParsing="false" onAction="#actionCBapplyPT" text="Apply to PowerTransformer" />
                                         <CheckBox fx:id="fcbSM" mnemonicParsing="false" onAction="#actionCBApplySM" text="Apply to SynchronousMachine">
                                             <HBox.margin>
                                                 <Insets />
