@@ -2,3 +2,6 @@
 /target/
 /.idea
 /.idea/
+/target/CimPalCGMESConverter.exe
+/target/CimPalCGMESConverter.jar
+/out/artifacts/CimPalCGMESConverter_jar/
