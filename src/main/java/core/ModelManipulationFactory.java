@@ -1114,7 +1114,7 @@ public class ModelManipulationFactory {
         }
 
         //save
-        saveInstanceModelData(convertedModelMap, saveProperties, loadDataMap.get("profileModelMap"));
+        saveInstanceModelData(convertedModelMap, saveProperties, "CGMESv3.0");
 
     }
 
@@ -1244,7 +1244,7 @@ public class ModelManipulationFactory {
 
 
         //save the borders
-        saveInstanceModelData(newBDModelMap, saveProperties, profileModelMap);
+        saveInstanceModelData(newBDModelMap, saveProperties, "CGMESv3.0");
 
     }
 
@@ -1431,7 +1431,7 @@ public class ModelManipulationFactory {
         newBDModelMap.put("BoundaryData.xml", newBoderModel);
         newBDModelMap.put("ReferenceData.xml", newRefModel);
         //save the borders
-        saveInstanceModelData(newBDModelMap, saveProperties, profileModelMap);
+        saveInstanceModelData(newBDModelMap, saveProperties, "CGMESv3.0");
 
     }
 
@@ -1753,7 +1753,7 @@ public class ModelManipulationFactory {
 
 
         //save the borders
-        saveInstanceModelData(newBDModelMap, saveProperties, profileModelMap);
+        saveInstanceModelData(newBDModelMap, saveProperties, "CGMESv3.0");
 
     }
 
@@ -1924,7 +1924,7 @@ public class ModelManipulationFactory {
     }
 
     //Save data
-    public static void saveInstanceModelData(Map<String, Model> instanceDataModelMap, Map<String, Object> saveProperties, Map<String, Model> profileModelMap) throws IOException {
+    public static void saveInstanceModelData(Map<String, Model> instanceDataModelMap, Map<String, Object> saveProperties, String cgmesVersion) throws IOException {
 
         boolean useFileDialog = (boolean) saveProperties.get("useFileDialog");
         if (!useFileDialog) {
@@ -1947,17 +1947,26 @@ public class ModelManipulationFactory {
         for (Map.Entry<String, Model> entry : instanceDataModelMap.entrySet()) {
 
             //TODO fix this to be more universal
-            String profileURI = switch (entry.getKey()) {
-                case "EQ" -> "http://entsoe.eu/CIM/EquipmentCore/3/1#";
-                case "SSH" -> "http://entsoe.eu/CIM/SteadyStateHypothesis/1/1#";
-                case "TP" -> "http://entsoe.eu/CIM/Topology/4/1#";
-                case "SV" -> "http://entsoe.eu/CIM/StateVariables/4/1#";
-                default -> null;
-            };
+            String profileURI = Objects.equals(cgmesVersion, "CGMESv2.4") ?
+                    switch (entry.getKey()) {
+                        case "EQ" -> "http://entsoe.eu/CIM/EquipmentCore/3/1#";
+                        case "SSH" -> "http://entsoe.eu/CIM/SteadyStateHypothesis/1/1#";
+                        case "TP" -> "http://entsoe.eu/CIM/Topology/4/1#";
+                        case "SV" -> "http://entsoe.eu/CIM/StateVariables/4/1#";
+                        default -> null;
+                    }
+                :
+                    switch (entry.getKey()) {
+                        case "EQ" -> "http://iec.ch/TC57/ns/CIM/CoreEquipment-EU/3.0#";
+                        case "SSH" -> "http://iec.ch/TC57/ns/CIM/SteadyStateHypothesis-EU/3.0#";
+                        case "TP" -> "http://iec.ch/TC57/ns/CIM/Topology-EU/3.0#";
+                        case "SV" -> "http://iec.ch/TC57/ns/CIM/StateVariables-EU/3.0#";
+                        default -> null;
+                    };
 
 
-            Set<Resource> rdfAboutList = LoadRDFAbout(profileURI, "CGMESv2.4");
-            Set<Resource> rdfEnumList = LoadRDFEnum(profileURI, "CGMESv2.4");
+            Set<Resource> rdfAboutList = LoadRDFAbout(profileURI, cgmesVersion);
+            Set<Resource> rdfEnumList = LoadRDFEnum(profileURI, cgmesVersion);
 
 //            Set<Resource> rdfAboutList = rdfAboutMap.get(entry.getKey());
 //            Set<Resource> rdfEnumList = rdfEnumMap.get(entry.getKey());
@@ -2494,7 +2503,7 @@ public class ModelManipulationFactory {
         modifiedModelMap.put("TP", modTPModel);
 
         //save
-        saveInstanceModelData(modifiedModelMap, saveProperties, loadDataMap.get("profileModelMap"));
+        saveInstanceModelData(modifiedModelMap, saveProperties, cgmesVersion);
         if (expMap){
             exportMapping(expMapToXls);
         }
