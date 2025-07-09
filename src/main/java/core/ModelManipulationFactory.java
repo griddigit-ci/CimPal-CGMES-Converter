@@ -2389,9 +2389,89 @@ public class ModelManipulationFactory {
         modSVModel.add(modelSV);
         modTPModel.add(modelTP);
 
+        //update header to refer to Operation profile - only for CGMES v2.4
+        if (!cgmesVersion.equals("CGMESv3.0") ) {// because for CGMES v3 there is no need to add 0 voltage
+            Resource headerRes = modEQModel.listSubjectsWithProperty(RDF.type, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#FullModel")).next();
+            modEQModel.add(ResourceFactory.createStatement(headerRes, ResourceFactory.createProperty("http://iec.ch/TC57/61970-552/ModelDescription/1#Model.profile"), ResourceFactory.createPlainLiteral("http://entsoe.eu/CIM/EquipmentOperation/3/1")));
+        }
+
+        //add ConnectivityNode for each TopologicalNode in case there is no and link the Terminal
+        RDFNode TopologicalNode = ResourceFactory.createProperty(cimns,"TopologicalNode");
+        RDFNode ConnectivityNode = ResourceFactory.createProperty(cimns,"ConnectivityNode");
+        Property mrid = ResourceFactory.createProperty("http://iec.ch/TC57/CIM100#IdentifiedObject.mRID");
+        Property ioname = ResourceFactory.createProperty(cimns,"IdentifiedObject.name");
+        Property termToCN = ResourceFactory.createProperty(cimns,"Terminal.ConnectivityNode");
+        Property termToTN = ResourceFactory.createProperty(cimns,"Terminal.TopologicalNode");
+        Property cnToTN = ResourceFactory.createProperty(cimns,"ConnectivityNode.TopologicalNode");
+        Property cncncontainer = ResourceFactory.createProperty(cimns, "ConnectivityNode.ConnectivityNodeContainer");
+        Property tncncontainer = ResourceFactory.createProperty(cimns, "TopologicalNode.ConnectivityNodeContainer");
+        for (StmtIterator s = modTPModel.listStatements(null,RDF.type,TopologicalNode); s.hasNext();) {
+            Statement stmt = s.next();
+            if (!modTPModel.listStatements(null, cnToTN, stmt.getSubject()).hasNext()) {
+                List<String> ids = GenerateUUID();
+
+                Resource cnRes = ResourceFactory.createResource(cimns + ids.get(1));
+                modEQModel.add(ResourceFactory.createStatement(cnRes, RDF.type, ConnectivityNode));
+                modEQModel.add(ResourceFactory.createStatement(cnRes, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
+                if (cgmesVersion.equals("CGMESv3.0")) {
+                    modEQModel.add(ResourceFactory.createStatement(cnRes, mrid, ResourceFactory.createPlainLiteral(ids.getFirst())));
+                }
+                modEQModel.add(ResourceFactory.createStatement(cnRes, ioname, ResourceFactory.createPlainLiteral("new node"))); // add a default name
+                modTPModel.add(ResourceFactory.createStatement(cnRes, RDF.type, ConnectivityNode));
+                modTPModel.add(ResourceFactory.createStatement(cnRes, cnToTN, stmt.getSubject()));
+                RDFNode tnContainer;
+                if (modTPModel.listStatements(stmt.getSubject(), tncncontainer, (RDFNode) null).hasNext()) {
+                    tnContainer = modTPModel.listStatements(stmt.getSubject(), tncncontainer, (RDFNode) null).next().getObject();
+                } else if (modelTPBD.listStatements(stmt.getSubject(), tncncontainer, (RDFNode) null).hasNext()) {
+                    tnContainer = modelTPBD.listStatements(stmt.getSubject(), tncncontainer, (RDFNode) null).next().getObject();
+                } else {
+                    tnContainer = ResourceFactory.createProperty(cimns, "_NoContainer");
+                    //TODO issue warning
+                }
+                modEQModel.add(ResourceFactory.createStatement(cnRes, cncncontainer, tnContainer));
+
+//                if (stmt.getSubject().getLocalName().equals("_f34cd840-dac6-5f69-a445-345313b7bd6f")){
+//                    int k=1;
+//                }
+                //get all terminals of topologicalNode
+                List<Statement> TerminalList = modTPModel.listStatements(null, termToTN, stmt.getSubject()).toList();
+                for (Statement term : TerminalList){
+                    modEQModel.add(ResourceFactory.createStatement(term.getSubject().asResource(), termToCN, ResourceFactory.createProperty(cnRes.toString())));
+                }
+            }
+        }
+        //solve the problems with terminals connecting to the boundary nodes
+        for (StmtIterator s = modelTPBD.listStatements(null,RDF.type,TopologicalNode); s.hasNext();) {
+            Statement stmt = s.next();
+            //get all terminals of topologicalNode
+            List<Statement> TerminalList = modTPModel.listStatements(null, termToTN, stmt.getSubject()).toList();
+            // get boundary CN
+            Resource boundaryCN = modelTPBD.listStatements(null, cnToTN, stmt.getSubject()).next().getSubject();
+            for (Statement term : TerminalList){
+                modEQModel.add(ResourceFactory.createStatement(term.getSubject().asResource(), termToCN, boundaryCN));
+            }
+        }
+
+        //check for association ControlArea.EnergyArea for CGMES v2.4
+        if (!cgmesVersion.equals("CGMESv3.0") ) {//
+            Resource controlAreaRes = modEQModel.listSubjectsWithProperty(RDF.type, ResourceFactory.createProperty(cimns,"ControlArea")).next();
+            //find EnergyArea
+            Resource loadAreaRes = null;
+            if (modEQModel.listStatements(null, RDF.type, ResourceFactory.createProperty(cimns,"LoadArea")).hasNext()){
+                List<Statement> loadAreaList = modEQModel.listStatements(null, RDF.type, ResourceFactory.createProperty(cimns,"LoadArea")).toList();
+                loadAreaRes = loadAreaList.getFirst().getSubject();
+            }else{
+                //TODO do warning that energy area is missing or create it...
+            }
+            if (!modEQModel.listStatements(controlAreaRes, ResourceFactory.createProperty(cimns,"ControlArea.EnergyArea"), (RDFNode) null).hasNext()){
+                modEQModel.add(ResourceFactory.createStatement(controlAreaRes, ResourceFactory.createProperty(cimns,"ControlArea.EnergyArea"), loadAreaRes));
+            }
+        }
+
+
         if (applyLine){
             //find all ACLineSegments
-            //for each of the line segments add 2 breakers
+            //for each of the line segments, add 2 breakers
             RDFNode aclinesegment = ResourceFactory.createProperty(cimns,"ACLineSegment");
             for (StmtIterator s = modEQModel.listStatements(null,RDF.type,aclinesegment); s.hasNext();){
                 Statement stmt = s.next();
@@ -2486,6 +2566,22 @@ public class ModelManipulationFactory {
 
             }
         }
+
+        // check for missing associations Terminal.TopologicalNode
+        for (StmtIterator t = modEQModel.listStatements(null, ResourceFactory.createProperty(cimns, "Terminal.ConnectivityNode"), (RDFNode) null); t.hasNext(); ) { // loop on Terminal classes
+            Statement stmtT = t.next();
+            modTPModel.add(ResourceFactory.createStatement(stmtT.getSubject(), RDF.type, ResourceFactory.createProperty(cimns, "Terminal")));
+            Resource tnRes = null;
+            if (modTPModel.listStatements(stmtT.getObject().asResource(), ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode"),(RDFNode) null).hasNext()) {
+                tnRes = modTPModel.getRequiredProperty(stmtT.getObject().asResource(), ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode")).getResource(); 
+            }else if (modelTPBD.listStatements(stmtT.getObject().asResource(), ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode"),(RDFNode) null).hasNext()){
+                tnRes = modelTPBD.getRequiredProperty(stmtT.getObject().asResource(), ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode")).getResource();
+            }
+            
+            modTPModel.add(ResourceFactory.createStatement(stmtT.getSubject(), ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode"), tnRes));
+        }
+
+
 
         //Delete the custom extension
         List<Statement> stmpToDelete = new LinkedList<>();
@@ -3498,11 +3594,11 @@ public class ModelManipulationFactory {
                 }
 
 
-//                Statement stmtCN = modTPModel.listStatements(null, cnToTn, lineTN.getFirst().getObject()).nextStatement();
+//                Statement stmtCN = modTPModel.listStatements(null, cnToTn, trafoTN.getFirst().getObject()).nextStatement();
 //                cn1res = stmtCN.getSubject();
 //                //need to remove Terminal.ConnectivityNode
-//                if (modEQModel.listStatements(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
-//                    modEQModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
+//                if (modEQModel.listStatements(trafoTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
+//                    modEQModel.remove(ResourceFactory.createStatement(trafoTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
 //                }
 //                modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
             } else {//there is no CN at side 1, add CN
@@ -3601,11 +3697,11 @@ public class ModelManipulationFactory {
 
 
 
-//                Statement stmtCN = modTPModel.listStatements(null, cnToTn, lineTN.get(side).getObject()).nextStatement();
+//                Statement stmtCN = modTPModel.listStatements(null, cnToTn, trafoTN.get(side).getObject()).nextStatement();
 //                cn2res = stmtCN.getSubject();
 //                //need to remove Terminal.ConnectivityNode
-//                if (modEQModel.listStatements(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
-//                    modEQModel.remove(ResourceFactory.createStatement(lineTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
+//                if (modEQModel.listStatements(trafoTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())).hasNext()) {
+//                    modEQModel.remove(ResourceFactory.createStatement(trafoTerminals.get(side).getSubject(), termToCn, ResourceFactory.createProperty(cn1res.toString())));
 //                }
 //                modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
             } else {//there is no CN at side 2, add CN
@@ -3859,7 +3955,10 @@ public class ModelManipulationFactory {
             modelTP.add(ResourceFactory.createStatement(tnRes, mrid, ResourceFactory.createPlainLiteral(ids.getFirst())));
         }
 
-        modelTP.add(ResourceFactory.createStatement(tnRes, ioname, ResourceFactory.createPlainLiteral(modelEQ.getRequiredProperty(cnRes,ioname).getObject().toString())));
+        if (!modelTP.listStatements(tnRes,ioname,(RDFNode) null).hasNext()){
+            modelTP.add(ResourceFactory.createStatement(tnRes, ioname, ResourceFactory.createPlainLiteral(modelEQ.getRequiredProperty(cnRes,ioname).getObject().toString())));
+        }
+
         modelTP.add(ResourceFactory.createStatement(tnRes, tncnContainer, ResourceFactory.createProperty(modelEQ.getRequiredProperty(cnRes,cnContainer).getObject().toString())));
 
         for (StmtIterator t = modelEQ.listStatements(null, ResourceFactory.createProperty(cimns, "Terminal.ConnectivityNode"), cnRes); t.hasNext(); ) { // loop on Terminal classes
@@ -3871,7 +3970,7 @@ public class ModelManipulationFactory {
         //add in SV ref to the island
         modelSV.add(ResourceFactory.createStatement(island.getSubject(),ResourceFactory.createProperty(cimns,"TopologicalIsland.TopologicalNodes"),tnRes));
         //add SvVoltage
-        if (!cgmesVersion.equals("CGMESv3.0")) {// because for CGMES v3 there is no need to add 0 voltage
+        if (!cgmesVersion.equals("CGMESv3.0") && !modelSV.listStatements(null, ResourceFactory.createProperty(cimns,"SvVoltage.TopologicalNode"), ResourceFactory.createResource(tnRes.toString())).hasNext()) {// because for CGMES v3 there is no need to add 0 voltage
             List<String> idssvvoltage = GenerateUUID();
             Resource svvoltageRes = ResourceFactory.createResource(cimns + idssvvoltage.get(1));
             modelSV.add(ResourceFactory.createStatement(svvoltageRes, RDF.type, ResourceFactory.createProperty(cimns, "SvVoltage")));

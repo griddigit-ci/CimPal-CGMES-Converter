@@ -420,7 +420,7 @@ public class MainController implements Initializable {
         Platform.runLater(() -> foutputWindow.appendText(valueOf));
     }
 
-    public void actionBtnModify() throws URISyntaxException, IOException {
+    public void actionBtnModify() throws IOException {
 
         String cgmesVersion="";
         if(fCBCGMESstd.getSelectionModel().getSelectedItem().toString().equals("CGMES v2.4 (IEC TS 61970-600-1,-2:2017)")){
