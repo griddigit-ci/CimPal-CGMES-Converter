@@ -3152,29 +3152,29 @@ public class ModelManipulationFactory {
                     }
                 }
 
-                if (!hasMainCN){
-                    List<Resource> terminalsCN = new LinkedList<>();
-                    for (Statement t : termList) {
-                        //terminalsCN.add(t.getSubject());
-                        //get cond equipment
-                        Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
-                        String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
-                        if (!resType.equals("ACLineSegment")) {
-                            terminalsCN.add(t.getSubject());
-                        }
-                    }
-                    terminalsCN.add(resBreaker1Term1);
-                    Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
-                    modEQModel = (Model) cn1Side1Map.get("modelEQ");
-                    modTPModel = (Model) cn1Side1Map.get("modelTP");
-                    modSVModel = (Model) cn1Side1Map.get("modelSV");
-                    cn1res = (Resource) cn1Side1Map.get("resource");
-                    modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
-                    modEQModel.add(ResourceFactory.createStatement(cn1res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
-
-                    modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
-                    modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
-                }
+//                if (!hasMainCN){
+//                    List<Resource> terminalsCN = new LinkedList<>();
+//                    for (Statement t : termList) {
+//                        //terminalsCN.add(t.getSubject());
+//                        //get cond equipment
+//                        Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
+//                        String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
+//                        if (!resType.equals("ACLineSegment")) {
+//                            terminalsCN.add(t.getSubject());
+//                        }
+//                    }
+//                    terminalsCN.add(resBreaker1Term1);
+//                    Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
+//                    modEQModel = (Model) cn1Side1Map.get("modelEQ");
+//                    modTPModel = (Model) cn1Side1Map.get("modelTP");
+//                    modSVModel = (Model) cn1Side1Map.get("modelSV");
+//                    cn1res = (Resource) cn1Side1Map.get("resource");
+//                    modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
+//                    modEQModel.add(ResourceFactory.createStatement(cn1res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
+//
+//                    modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+//                    modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
+//                }
 
 
 
@@ -3187,28 +3187,28 @@ public class ModelManipulationFactory {
 //                modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
             } else {//there is no CN at side 1, add CN
 
-
-                List<Resource> terminalsCN = new LinkedList<>();
-                for (Statement t : termList) {
-                    //terminalsCN.add(t.getSubject());
-                    //get cond equipment
-                    Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
-                    String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
-                    if (!resType.equals("ACLineSegment")) {
-                        terminalsCN.add(t.getSubject());
-                    }
-                }
-                terminalsCN.add(resBreaker1Term1);
-                Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
-                modEQModel = (Model) cn1Side1Map.get("modelEQ");
-                modTPModel = (Model) cn1Side1Map.get("modelTP");
-                modSVModel = (Model) cn1Side1Map.get("modelSV");
-                cn1res = (Resource) cn1Side1Map.get("resource");
-                modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
-                modEQModel.add(ResourceFactory.createStatement(cn1res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
-
-                modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
-                modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
+//
+//                List<Resource> terminalsCN = new LinkedList<>();
+//                for (Statement t : termList) {
+//                    //terminalsCN.add(t.getSubject());
+//                    //get cond equipment
+//                    Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
+//                    String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
+//                    if (!resType.equals("ACLineSegment")) {
+//                        terminalsCN.add(t.getSubject());
+//                    }
+//                }
+//                terminalsCN.add(resBreaker1Term1);
+//                Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
+//                modEQModel = (Model) cn1Side1Map.get("modelEQ");
+//                modTPModel = (Model) cn1Side1Map.get("modelTP");
+//                modSVModel = (Model) cn1Side1Map.get("modelSV");
+//                cn1res = (Resource) cn1Side1Map.get("resource");
+//                modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
+//                modEQModel.add(ResourceFactory.createStatement(cn1res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
+//
+//                modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+//                modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
             }
 
 
@@ -3256,28 +3256,28 @@ public class ModelManipulationFactory {
                         hasMainCN = true;
                     }
                 }
-                if (!hasMainCN){
-                    List<Resource> terminalsCN = new LinkedList<>();
-                    for (Statement t : termList) {
-                        //get cond equipment
-                        Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
-                        String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
-                        if (!resType.equals("ACLineSegment")) {
-                            terminalsCN.add(t.getSubject());
-                        }
-                    }
-                    terminalsCN.add(resBreaker2Term1);
-                    Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
-                    modEQModel = (Model) cn1Side1Map.get("modelEQ");
-                    modTPModel = (Model) cn1Side1Map.get("modelTP");
-                    modSVModel = (Model) cn1Side1Map.get("modelSV");
-                    cn2res = (Resource) cn1Side1Map.get("resource");
-                    modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
-                    modEQModel.add(ResourceFactory.createStatement(cn2res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
-
-                    modTPModel.add(ResourceFactory.createStatement(cn2res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
-                    modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
-                }
+//                if (!hasMainCN){
+//                    List<Resource> terminalsCN = new LinkedList<>();
+//                    for (Statement t : termList) {
+//                        //get cond equipment
+//                        Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
+//                        String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
+//                        if (!resType.equals("ACLineSegment")) {
+//                            terminalsCN.add(t.getSubject());
+//                        }
+//                    }
+//                    terminalsCN.add(resBreaker2Term1);
+//                    Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
+//                    modEQModel = (Model) cn1Side1Map.get("modelEQ");
+//                    modTPModel = (Model) cn1Side1Map.get("modelTP");
+//                    modSVModel = (Model) cn1Side1Map.get("modelSV");
+//                    cn2res = (Resource) cn1Side1Map.get("resource");
+//                    modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
+//                    modEQModel.add(ResourceFactory.createStatement(cn2res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
+//
+//                    modTPModel.add(ResourceFactory.createStatement(cn2res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+//                    modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
+//                }
 
 
 
@@ -3291,26 +3291,26 @@ public class ModelManipulationFactory {
             } else {//there is no CN at side 2, add CN
 
 
-                List<Resource> terminalsCN = new LinkedList<>();
-                for (Statement t : termList) {
-                    //get cond equipment
-                    Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
-                    String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
-                    if (!resType.equals("ACLineSegment")) {
-                        terminalsCN.add(t.getSubject());
-                    }
-                }
-                terminalsCN.add(resBreaker2Term1);
-                Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
-                modEQModel = (Model) cn1Side1Map.get("modelEQ");
-                modTPModel = (Model) cn1Side1Map.get("modelTP");
-                modSVModel = (Model) cn1Side1Map.get("modelSV");
-                cn2res = (Resource) cn1Side1Map.get("resource");
-                modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
-                modEQModel.add(ResourceFactory.createStatement(cn2res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
-
-                modTPModel.add(ResourceFactory.createStatement(cn2res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
-                modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
+//                List<Resource> terminalsCN = new LinkedList<>();
+//                for (Statement t : termList) {
+//                    //get cond equipment
+//                    Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
+//                    String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
+//                    if (!resType.equals("ACLineSegment")) {
+//                        terminalsCN.add(t.getSubject());
+//                    }
+//                }
+//                terminalsCN.add(resBreaker2Term1);
+//                Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, lineTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
+//                modEQModel = (Model) cn1Side1Map.get("modelEQ");
+//                modTPModel = (Model) cn1Side1Map.get("modelTP");
+//                modSVModel = (Model) cn1Side1Map.get("modelSV");
+//                cn2res = (Resource) cn1Side1Map.get("resource");
+//                modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
+//                modEQModel.add(ResourceFactory.createStatement(cn2res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
+//
+//                modTPModel.add(ResourceFactory.createStatement(cn2res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+//                modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTn, ResourceFactory.createProperty(lineTN.get(side).getObject().toString())));
             }
 
 
@@ -3569,29 +3569,29 @@ public class ModelManipulationFactory {
                     }
                 }
 
-                if (!hasMainCN){
-                    List<Resource> terminalsCN = new LinkedList<>();
-                    for (Statement t : termList) {
-                        //terminalsCN.add(t.getSubject());
-                        //get cond equipment
-                        Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
-                        String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
-                        if (!resType.equals("ACLineSegment")) {
-                            terminalsCN.add(t.getSubject());
-                        }
-                    }
-                    terminalsCN.add(resBreaker1Term1);
-                    Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, trafoTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
-                    modEQModel = (Model) cn1Side1Map.get("modelEQ");
-                    modTPModel = (Model) cn1Side1Map.get("modelTP");
-                    modSVModel = (Model) cn1Side1Map.get("modelSV");
-                    cn1res = (Resource) cn1Side1Map.get("resource");
-                    modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
-                    modEQModel.add(ResourceFactory.createStatement(cn1res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
-
-                    modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
-                    modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(trafoTN.get(side).getObject().toString())));
-                }
+//                if (!hasMainCN){
+//                    List<Resource> terminalsCN = new LinkedList<>();
+//                    for (Statement t : termList) {
+//                        //terminalsCN.add(t.getSubject());
+//                        //get cond equipment
+//                        Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
+//                        String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
+//                        if (!resType.equals("ACLineSegment")) {
+//                            terminalsCN.add(t.getSubject());
+//                        }
+//                    }
+//                    terminalsCN.add(resBreaker1Term1);
+//                    Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, trafoTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
+//                    modEQModel = (Model) cn1Side1Map.get("modelEQ");
+//                    modTPModel = (Model) cn1Side1Map.get("modelTP");
+//                    modSVModel = (Model) cn1Side1Map.get("modelSV");
+//                    cn1res = (Resource) cn1Side1Map.get("resource");
+//                    modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
+//                    modEQModel.add(ResourceFactory.createStatement(cn1res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
+//
+//                    modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+//                    modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(trafoTN.get(side).getObject().toString())));
+//                }
 
 
 //                Statement stmtCN = modTPModel.listStatements(null, cnToTn, trafoTN.getFirst().getObject()).nextStatement();
@@ -3604,27 +3604,27 @@ public class ModelManipulationFactory {
             } else {//there is no CN at side 1, add CN
 
 
-                List<Resource> terminalsCN = new LinkedList<>();
-                for (Statement t : termList) {
-                    //terminalsCN.add(t.getSubject());
-                    //get cond equipment
-                    Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
-                    String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
-                    if (!resType.equals("ACLineSegment")) {
-                        terminalsCN.add(t.getSubject());
-                    }
-                }
-                terminalsCN.add(resBreaker1Term1);
-                Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, trafoTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
-                modEQModel = (Model) cn1Side1Map.get("modelEQ");
-                modTPModel = (Model) cn1Side1Map.get("modelTP");
-                modSVModel = (Model) cn1Side1Map.get("modelSV");
-                cn1res = (Resource) cn1Side1Map.get("resource");
-                modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
-                modEQModel.add(ResourceFactory.createStatement(cn1res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
-
-                modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
-                modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(trafoTN.get(side).getObject().toString())));
+//                List<Resource> terminalsCN = new LinkedList<>();
+//                for (Statement t : termList) {
+//                    //terminalsCN.add(t.getSubject());
+//                    //get cond equipment
+//                    Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
+//                    String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
+//                    if (!resType.equals("ACLineSegment")) {
+//                        terminalsCN.add(t.getSubject());
+//                    }
+//                }
+//                terminalsCN.add(resBreaker1Term1);
+//                Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, trafoTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
+//                modEQModel = (Model) cn1Side1Map.get("modelEQ");
+//                modTPModel = (Model) cn1Side1Map.get("modelTP");
+//                modSVModel = (Model) cn1Side1Map.get("modelSV");
+//                cn1res = (Resource) cn1Side1Map.get("resource");
+//                modEQModel.add(ResourceFactory.createStatement(resBreaker1Term1, termToCn, ResourceFactory.createProperty(cn1res.toString())));
+//                modEQModel.add(ResourceFactory.createStatement(cn1res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
+//
+//                modTPModel.add(ResourceFactory.createStatement(cn1res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+//                modTPModel.add(ResourceFactory.createStatement(cn1res, cnToTn, ResourceFactory.createProperty(trafoTN.get(side).getObject().toString())));
             }
 
 
@@ -3672,28 +3672,28 @@ public class ModelManipulationFactory {
                     }
                 }
 
-                if (!hasMainCN){
-                    List<Resource> terminalsCN = new LinkedList<>();
-                    for (Statement t : termList) {
-                        //get cond equipment
-                        Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
-                        String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
-                        if (!resType.equals("ACLineSegment")) {
-                            terminalsCN.add(t.getSubject());
-                        }
-                    }
-                    terminalsCN.add(resBreaker2Term1);
-                    Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, trafoTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
-                    modEQModel = (Model) cn1Side1Map.get("modelEQ");
-                    modTPModel = (Model) cn1Side1Map.get("modelTP");
-                    modSVModel = (Model) cn1Side1Map.get("modelSV");
-                    cn2res = (Resource) cn1Side1Map.get("resource");
-                    modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
-                    modEQModel.add(ResourceFactory.createStatement(cn2res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
-
-                    modTPModel.add(ResourceFactory.createStatement(cn2res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
-                    modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTn, ResourceFactory.createProperty(trafoTN.get(side).getObject().toString())));
-                }
+//                if (!hasMainCN){
+//                    List<Resource> terminalsCN = new LinkedList<>();
+//                    for (Statement t : termList) {
+//                        //get cond equipment
+//                        Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
+//                        String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
+//                        if (!resType.equals("ACLineSegment")) {
+//                            terminalsCN.add(t.getSubject());
+//                        }
+//                    }
+//                    terminalsCN.add(resBreaker2Term1);
+//                    Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, trafoTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
+//                    modEQModel = (Model) cn1Side1Map.get("modelEQ");
+//                    modTPModel = (Model) cn1Side1Map.get("modelTP");
+//                    modSVModel = (Model) cn1Side1Map.get("modelSV");
+//                    cn2res = (Resource) cn1Side1Map.get("resource");
+//                    modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
+//                    modEQModel.add(ResourceFactory.createStatement(cn2res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
+//
+//                    modTPModel.add(ResourceFactory.createStatement(cn2res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+//                    modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTn, ResourceFactory.createProperty(trafoTN.get(side).getObject().toString())));
+//                }
 
 
 
@@ -3707,26 +3707,26 @@ public class ModelManipulationFactory {
             } else {//there is no CN at side 2, add CN
 
 
-                List<Resource> terminalsCN = new LinkedList<>();
-                for (Statement t : termList) {
-                    //get cond equipment
-                    Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
-                    String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
-                    if (!resType.equals("ACLineSegment")) {
-                        terminalsCN.add(t.getSubject());
-                    }
-                }
-                terminalsCN.add(resBreaker2Term1);
-                Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, trafoTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
-                modEQModel = (Model) cn1Side1Map.get("modelEQ");
-                modTPModel = (Model) cn1Side1Map.get("modelTP");
-                modSVModel = (Model) cn1Side1Map.get("modelSV");
-                cn2res = (Resource) cn1Side1Map.get("resource");
-                modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
-                modEQModel.add(ResourceFactory.createStatement(cn2res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
-
-                modTPModel.add(ResourceFactory.createStatement(cn2res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
-                modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTn, ResourceFactory.createProperty(trafoTN.get(side).getObject().toString())));
+//                List<Resource> terminalsCN = new LinkedList<>();
+//                for (Statement t : termList) {
+//                    //get cond equipment
+//                    Resource condEq = modEQModel.getRequiredProperty(t.getSubject(), termToConEQ).getObject().asResource();
+//                    String resType = modEQModel.getRequiredProperty(condEq, RDF.type).getObject().asResource().getLocalName();
+//                    if (!resType.equals("ACLineSegment")) {
+//                        terminalsCN.add(t.getSubject());
+//                    }
+//                }
+//                terminalsCN.add(resBreaker2Term1);
+//                Map<String, Object> cn1Side1Map = AddConnectivityNode(modEQModel, modTPModel, modSVModel, cimns, cgmesVersion, trafoTN.get(side), terminalsCN, modelTPBD, impMap, mapIDs, side, innerSide);
+//                modEQModel = (Model) cn1Side1Map.get("modelEQ");
+//                modTPModel = (Model) cn1Side1Map.get("modelTP");
+//                modSVModel = (Model) cn1Side1Map.get("modelSV");
+//                cn2res = (Resource) cn1Side1Map.get("resource");
+//                modEQModel.add(ResourceFactory.createStatement(resBreaker2Term1, termToCn, ResourceFactory.createProperty(cn2res.toString())));
+//                modEQModel.add(ResourceFactory.createStatement(cn2res, ResourceFactory.createProperty("http://griddigit.eu/ext#","ConnectivityNode.isMain"), ResourceFactory.createPlainLiteral("true")));
+//
+//                modTPModel.add(ResourceFactory.createStatement(cn2res, RDF.type, ResourceFactory.createProperty(cimns, "ConnectivityNode")));
+//                modTPModel.add(ResourceFactory.createStatement(cn2res, cnToTn, ResourceFactory.createProperty(trafoTN.get(side).getObject().toString())));
             }
 
 
