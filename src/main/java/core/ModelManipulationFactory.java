@@ -20,6 +20,9 @@ import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -2241,26 +2244,55 @@ public class ModelManipulationFactory {
                     "breaker2IDTerminal2ID",
                     "breaker3ID",
                     "breaker3IDTerminal1ID",
-                    "breaker3IDTerminal2ID"
+                    "breaker3IDTerminal2ID",
+                    "topologicalNodeMRID",
+                    "connectivityNodeMRID"
             );
             for (File file : MainController.MappingMapFile) {
                 // load MainController.MappingMapFile - this is the xls mapping file that user selects
-                ArrayList<Object> inputXLSdata = ExcelTools.importXLSX(file, 0);
-                //loop on the file and store the data in the graph mapModel
-                for (int i = 1; i < inputXLSdata.size(); i++) {
-                    LinkedList<?> row = (LinkedList<?>) inputXLSdata.get(i);
-                    Resource subject = ResourceFactory.createResource(cimns+row.get(1).toString());
-                    RDFNode object = ResourceFactory.createResource(cimns+row.getFirst().toString());
-                    Statement stmt = ResourceFactory.createStatement(subject,RDF.type,object);
-                    mapModel.add(stmt);
-                    int k = 0;
-                    for (int j = 2; j < row.size(); j++){
-                        object = ResourceFactory.createPlainLiteral(row.get(j).toString());
-                        Property predicate = ResourceFactory.createProperty(cimns+prop_names.get(k));
-                        stmt = ResourceFactory.createStatement(subject,predicate,object);
-                        mapModel.add(stmt);
-                        k++;
+                try (FileInputStream fis = new FileInputStream(file);
+                    Workbook workbook = WorkbookFactory.create(fis)) {
+                    for (int sheetIndex = 0; sheetIndex < workbook.getNumberOfSheets(); sheetIndex++) {
+                        //Sheet sheet = workbook.getSheetAt(sheetIndex);
+                        String sheetName = workbook.getSheetName(sheetIndex);
+                        if (sheetName.equals("Mapping")) {
+                            ArrayList<Object> inputXLSdata = ExcelTools.importXLSX(file, sheetIndex);
+                            //loop on the file and store the data in the graph mapModel
+
+                            for (int i = 1; i < inputXLSdata.size(); i++) {
+                                LinkedList<?> row = (LinkedList<?>) inputXLSdata.get(i);
+                                Resource subject = ResourceFactory.createResource(cimns + row.get(1).toString());
+                                RDFNode object = ResourceFactory.createResource(cimns + row.getFirst().toString());
+                                Statement stmt = ResourceFactory.createStatement(subject, RDF.type, object);
+                                mapModel.add(stmt);
+                                int k = 0;
+                                for (int j = 2; j < row.size(); j++) {
+                                    object = ResourceFactory.createPlainLiteral(row.get(j).toString());
+                                    Property predicate = ResourceFactory.createProperty(cimns + prop_names.get(k));
+                                    stmt = ResourceFactory.createStatement(subject, predicate, object);
+                                    mapModel.add(stmt);
+                                    k++;
+                                }
+                            }
+                        }else if (sheetName.equals("TN-CN Mapping")) {
+                            ArrayList<Object> inputXLSdata = ExcelTools.importXLSX(file, sheetIndex);
+                            //loop on the file and store the data in the graph mapModel
+
+                            for (int i = 1; i < inputXLSdata.size(); i++) {
+                                LinkedList<?> row = (LinkedList<?>) inputXLSdata.get(i);
+                                Resource subject = ResourceFactory.createResource(cimns + row.getFirst().toString());
+                                RDFNode object = ResourceFactory.createResource(cimns + "TopologicalNode");
+                                Statement stmt = ResourceFactory.createStatement(subject, RDF.type, object);
+                                mapModel.add(stmt);
+                                Property predicate = ResourceFactory.createProperty(cimns + "connectivityNodeMRID");
+                                object = ResourceFactory.createPlainLiteral(row.get(1).toString());
+                                Statement stmt1 = ResourceFactory.createStatement(subject, predicate, object);
+                                mapModel.add(stmt1);
+                            }
+                        }
                     }
+                }catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         }
@@ -2290,6 +2322,8 @@ public class ModelManipulationFactory {
             List Breaker_3_ID = new ArrayList<>();
             List Breaker_3_ID_Terminal_1_ID = new ArrayList<>();
             List Breaker_3_ID_Terminal_2_ID = new ArrayList<>();
+            List TopologicalNode_main_ID = new ArrayList<>();
+            List ConnectivityNode_main_ID = new ArrayList<>();
             expMapToXls.put("Element_type",Element_type);
             expMapToXls.put("Element_ID",Element_ID);
             expMapToXls.put("ConnectivityNode_1_ID",ConnectivityNode_1_ID);
@@ -2313,6 +2347,8 @@ public class ModelManipulationFactory {
             expMapToXls.put("Breaker_3_ID",Breaker_3_ID);
             expMapToXls.put("Breaker_3_ID_Terminal_1_ID",Breaker_3_ID_Terminal_1_ID);
             expMapToXls.put("Breaker_3_ID_Terminal_2_ID",Breaker_3_ID_Terminal_2_ID);
+            expMapToXls.put("TopologicalNode_main_ID",TopologicalNode_main_ID);
+            expMapToXls.put("ConnectivityNode_main_ID",ConnectivityNode_main_ID);
         }
 
         //set properties for the export
@@ -2396,6 +2432,7 @@ public class ModelManipulationFactory {
         }
 
         //add ConnectivityNode for each TopologicalNode in case there is no and link the Terminal
+        Map<String,String> mapIDs = null;
         RDFNode TopologicalNode = ResourceFactory.createProperty(cimns,"TopologicalNode");
         RDFNode ConnectivityNode = ResourceFactory.createProperty(cimns,"ConnectivityNode");
         Property mrid = ResourceFactory.createProperty("http://iec.ch/TC57/CIM100#IdentifiedObject.mRID");
@@ -2405,10 +2442,35 @@ public class ModelManipulationFactory {
         Property cnToTN = ResourceFactory.createProperty(cimns,"ConnectivityNode.TopologicalNode");
         Property cncncontainer = ResourceFactory.createProperty(cimns, "ConnectivityNode.ConnectivityNodeContainer");
         Property tncncontainer = ResourceFactory.createProperty(cimns, "TopologicalNode.ConnectivityNodeContainer");
+        List TopologicalNode_main_ID = List.of();
+        List ConnectivityNode_main_ID = List.of();
+        if (expMap) {
+            TopologicalNode_main_ID = expMapToXls.get("TopologicalNode_main_ID");
+            ConnectivityNode_main_ID = expMapToXls.get("ConnectivityNode_main_ID");
+        }
         for (StmtIterator s = modTPModel.listStatements(null,RDF.type,TopologicalNode); s.hasNext();) {
             Statement stmt = s.next();
             if (!modTPModel.listStatements(null, cnToTN, stmt.getSubject()).hasNext()) {
-                List<String> ids = GenerateUUID();
+                //List<String> ids = GenerateUUID();
+
+                List<String> ids = new LinkedList<>();
+                if (impMap) {
+                    mapIDs = GetMapIDs(stmt);
+                    try {
+                        String id = mapIDs.get("connectivityNodeMRID");
+                        ids.add(id.split("_", 2)[1]);
+                        ids.add(id);
+                    }catch (Exception e){
+                        ids = GenerateUUID();
+                    }
+                }else{
+                    ids = GenerateUUID();
+                }
+
+                if (expMap) {
+                    TopologicalNode_main_ID.add(stmt.getSubject().getLocalName());
+                    ConnectivityNode_main_ID.add(ids.get(1));
+                }
 
                 Resource cnRes = ResourceFactory.createResource(cimns + ids.get(1));
                 modEQModel.add(ResourceFactory.createStatement(cnRes, RDF.type, ConnectivityNode));
@@ -2437,6 +2499,10 @@ public class ModelManipulationFactory {
                 List<Statement> TerminalList = modTPModel.listStatements(null, termToTN, stmt.getSubject()).toList();
                 for (Statement term : TerminalList){
                     modEQModel.add(ResourceFactory.createStatement(term.getSubject().asResource(), termToCN, ResourceFactory.createProperty(cnRes.toString())));
+                }
+                if (expMap) {
+                    expMapToXls.replace("TopologicalNode_main_ID",TopologicalNode_main_ID);
+                    expMapToXls.replace("ConnectivityNode_main_ID",ConnectivityNode_main_ID);
                 }
             }
         }
@@ -4630,6 +4696,40 @@ public class ModelManipulationFactory {
             }
 
         }
+
+        sheetname = "TN-CN Mapping";
+        sheet = workbook.createSheet(sheetname);
+        firstRow= sheet.createRow(0);
+
+        ///set titles of columns
+        firstRow.createCell(0).setCellValue("TopologicalNode MRID");
+        firstRow.createCell(1).setCellValue("ConnectivityNode MRID");
+
+        column1 = expMapToXls.get("TopologicalNode_main_ID");
+        column2 = expMapToXls.get("ConnectivityNode_main_ID");
+
+        for (int row=0; row<column1.size();row++) {
+            XSSFRow xssfRow = sheet.createRow(row + 1);
+
+            Object celValue = column1.get(row);
+            try {
+                if (celValue != null && Double.parseDouble(celValue.toString()) != 0.0) {
+                    xssfRow.createCell(0).setCellValue(Double.parseDouble(celValue.toString()));
+                }
+            } catch (NumberFormatException e) {
+                xssfRow.createCell(0).setCellValue(celValue.toString());
+            }
+
+            Object celValue1 = column2.get(row);
+            try {
+                if (celValue1 != null && Double.parseDouble(celValue1.toString()) != 0.0) {
+                    xssfRow.createCell(1).setCellValue(Double.parseDouble(celValue1.toString()));
+                }
+            } catch (NumberFormatException e ){
+                xssfRow.createCell(1).setCellValue(celValue1.toString());
+            }
+        }
+
 
         File saveFile = InstanceDataFactory.filesavecustom("Excel files", List.of("*.xlsx"),title,"");
         if (saveFile != null) {
