@@ -2647,6 +2647,34 @@ public class ModelManipulationFactory {
             modTPModel.add(ResourceFactory.createStatement(stmtT.getSubject(), ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode"), tnRes));
         }
 
+        // check for missing associations Terminal.TopologicalNode by looking at the original
+        for (StmtIterator t = modTPModel.listStatements(null, RDF.type, ResourceFactory.createProperty(cimns, "Terminal")); t.hasNext(); ) { // loop on Terminal classes
+            Statement stmtT = t.next();
+            if(!modTPModel.listStatements(stmtT.getSubject(),ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode"),(RDFNode) null).hasNext()) {
+                //get from the original
+                if (modelTP.listStatements(stmtT.getSubject(),ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode"),(RDFNode) null).hasNext()){
+                    Resource tnRes = modelTP.listStatements(stmtT.getSubject(),ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode"),(RDFNode) null).next().getObject().asResource();
+                    modTPModel.add(ResourceFactory.createStatement(stmtT.getSubject(), ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode"), tnRes));
+                }
+            }
+        }
+
+//        // check for missing associations Terminal.ConnectivityNode
+//        for (StmtIterator t = modTPModel.listStatements(null, ResourceFactory.createProperty(cimns, "Terminal.TopologicalNode"), (RDFNode) null); t.hasNext(); ) { // loop on Terminal classes
+//            Statement stmtT = t.next();
+//            if(!modEQModel.listStatements(stmtT.getSubject(),ResourceFactory.createProperty(cimns, "Terminal.ConnectivityNode"),(RDFNode) null).hasNext()) {
+//                modEQModel.add(ResourceFactory.createStatement(stmtT.getSubject(), RDF.type, ResourceFactory.createProperty(cimns, "Terminal")));
+//                Resource cnRes = null;
+//                if (modTPModel.listStatements(null, ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode"), stmtT.getObject().asResource()).hasNext()) {
+//                    cnRes = modTPModel.listStatements(null, ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode"), stmtT.getObject().asResource()).next().getSubject().asResource();
+//                } else if (modelTPBD.listStatements(null, ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode"), stmtT.getObject().asResource()).hasNext()) {
+//                    cnRes = modelTPBD.listStatements(null, ResourceFactory.createProperty(cimns, "ConnectivityNode.TopologicalNode"), stmtT.getObject().asResource()).next().getSubject().asResource();
+//                }
+//
+//                modEQModel.add(ResourceFactory.createStatement(stmtT.getSubject(), ResourceFactory.createProperty(cimns, "Terminal.ConnectivityNode"), cnRes));
+//            }
+//        }
+
 
 
         //Delete the custom extension
