@@ -9,10 +9,10 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jena.version>5.3.0</jena.version>
     <javafx.version>21.0.1</javafx.version>
-    <cimpal.version>2024.2.0.0</cimpal.version>
+    <cimpal.version>2025.10.13.1</cimpal.version>
   </properties>
 
-  <version>2024.2.0.0</version>
+  <version>2025.10.13.1</version>
   <groupId>eu.griddigit</groupId>
   <artifactId>CimPalCGMESConverter</artifactId>
 
